@@ -378,12 +378,45 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .card {
+      box-sizing: border-box;
+      position: relative;
       border: 4px solid #000;
       margin: 14px 0;
       padding: 16px 20px;
       background: #fff;
-      clear: both;
       overflow: visible;
+    }
+
+    .board {
+      overflow: hidden;
+    }
+
+    .cardMini {
+      width: 47%;
+      min-height: 190px;
+    }
+
+    .cardLeft {
+      float: left;
+      clear: left;
+    }
+
+    .cardRight {
+      float: right;
+      clear: right;
+    }
+
+    .cardDrop {
+      margin-top: 42px;
+    }
+
+    .cardIndoor {
+      min-height: 190px;
+    }
+
+    .cardWide {
+      clear: both;
+      width: 100%;
     }
 
     .cardLabel {
@@ -434,6 +467,40 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       line-height: 1;
     }
 
+    .cardMini .cardLabel {
+      font-size: 23px;
+      letter-spacing: 1px;
+    }
+
+    .cardMini .primary {
+      font-size: 48px;
+    }
+
+    .cardMini .secondary {
+      font-size: 25px;
+    }
+
+    .cardMini .marketRow,
+    .cardMini .marketPrice,
+    .cardMini .marketMove {
+      display: block;
+    }
+
+    .cardMini .marketMove {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: auto;
+    }
+
+    .cardMini .arrow {
+      font-size: 46px;
+    }
+
+    .cardMini .movePercent {
+      font-size: 22px;
+    }
+
     .secondary {
       margin-top: 10px;
       font-size: 32px;
@@ -467,6 +534,21 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
         padding: 18px;
       }
 
+      .cardMini {
+        width: 100%;
+        min-height: 0;
+      }
+
+      .cardLeft,
+      .cardRight {
+        float: none;
+        clear: both;
+      }
+
+      .cardDrop {
+        margin-top: 14px;
+      }
+
       .date {
         font-size: 34px;
       }
@@ -493,10 +575,12 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       <div class="date">${escapeHtml(date)}</div>
     </section>
 
-    ${renderMarketCard("NVDA", nvda)}
-    ${renderMarketCard("BTCUSDT", btc)}
-    ${renderIndoorCard(indoor)}
-    ${renderWeatherCard(weather)}
+    <section class="board">
+      ${renderMarketCard("NVDA", nvda, "cardMini cardLeft")}
+      ${renderMarketCard("BTCUSDT", btc, "cardMini cardRight cardDrop")}
+      ${renderIndoorCard(indoor)}
+      ${renderWeatherCard(weather)}
+    </section>
 
   </main>
 
@@ -509,14 +593,14 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 </html>`;
 }
 
-function renderMarketCard(label, quote) {
+function renderMarketCard(label, quote, className = "") {
   if (!quote) {
-    return renderUnavailableCard(label);
+    return renderUnavailableCard(label, className);
   }
 
   const movement = getMovement(quote.changePercent);
 
-  return `<section class="card">
+  return `<section class="card ${escapeHtml(className)}">
       <div class="cardLabel">${label}</div>
       <div class="marketRow">
         <div class="marketPrice">
@@ -549,7 +633,7 @@ function getMovement(value) {
 
 function renderIndoorCard(indoor) {
   if (!indoor) {
-    return `<section class="card">
+    return `<section class="card cardMini cardLeft cardIndoor">
       <div class="cardLabel">Indoor</div>
       <div class="primary">--</div>
       <div class="secondary">Waiting for HomePod</div>
@@ -566,7 +650,7 @@ function renderIndoorCard(indoor) {
         hour12: false,
       })}`;
 
-  return `<section class="card">
+  return `<section class="card cardMini cardLeft cardIndoor">
       <div class="cardLabel">Indoor</div>
       <div class="primary">${formatTemp(indoor.temperature)}</div>
       <div class="secondary">${escapeHtml(indoor.source)}${updatedLabel}</div>
@@ -579,7 +663,7 @@ function renderWeatherCard(weather) {
     return renderUnavailableCard("Weather");
   }
 
-  return `<section class="card">
+  return `<section class="card cardWide">
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
       <div class="secondary">${escapeHtml(weather.condition)} in ${escapeHtml(weather.city)}</div>
@@ -596,8 +680,8 @@ function renderWeatherCard(weather) {
     </section>`;
 }
 
-function renderUnavailableCard(label) {
-  return `<section class="card">
+function renderUnavailableCard(label, className = "") {
+  return `<section class="card ${escapeHtml(className)}">
       <div class="cardLabel">${escapeHtml(label)}</div>
       <div class="primary">--</div>
       <div class="secondary">Temporarily unavailable</div>
