@@ -741,7 +741,7 @@ function getMovement(value) {
 
 function renderIndoorCard(indoor) {
   if (!indoor) {
-    return `<section class="card cardTall">
+    return `<section class="card">
       <div class="cardLabel">Indoor</div>
       <div class="primary">--</div>
       <div class="secondary">Waiting for HomePod</div>
@@ -762,7 +762,7 @@ function renderIndoorCard(indoor) {
     ? `<div class="humidity">Humidity ${Math.round(indoor.humidity)}%</div>`
     : "";
 
-  return `<section class="card cardTall">
+  return `<section class="card">
       <div class="cardLabel">Indoor</div>
       <div class="primary">${formatTemp(indoor.temperature)}</div>
       <div class="source">${escapeHtml(indoor.source)} ${escapeHtml(updatedTime)}${humidityHtml}</div>
