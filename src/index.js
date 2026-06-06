@@ -1,4 +1,4 @@
-const REFRESH_SECONDS = 5 * 60;
+const REFRESH_SECONDS = 30;
 
 const DEFAULT_LOCATION = {
   city: "Toronto",
@@ -561,7 +561,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   <main class="shell">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote">Refresh at &middot; ${escapeHtml(generatedAt)}</div>
+      <div class="refreshNote">30s &middot; ${escapeHtml(generatedAt)}</div>
     </section>
 
     <section class="board">
