@@ -758,7 +758,6 @@ function renderWeatherCard(weather) {
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
       <div class="metrics">
-        <div class="metric"><strong>Feels</strong>${formatTemp(weather.feelsLike)}</div>
         <div class="metric"><strong>High/Low</strong>${formatTemp(weather.high)} / ${formatTemp(weather.low)}</div>
         <div class="metric"><strong>Rain</strong>${Number.isFinite(weather.rainChance) ? `${weather.rainChance}%` : "--"}</div>
         <div class="metric"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
