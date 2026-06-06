@@ -330,7 +330,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=600, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta http-equiv="refresh" content="${REFRESH_SECONDS}">
   <title>Kindle Dashboard</title>
   <style>
@@ -350,9 +350,17 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .shell {
-      max-width: 720px;
+      width: 560px;
+      max-width: none;
       margin: 0 auto;
       position: relative;
+    }
+
+    @media (min-width: 800px) {
+      .shell {
+        margin-left: 0;
+        zoom: 1.45;
+      }
     }
 
     .masthead {
@@ -530,31 +538,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       letter-spacing: 1px;
     }
 
-    @media (max-width: 520px) {
-      body {
-        padding: 20px;
-      }
-      .cardCompact,
-      .cardTall {
-        min-height: 0;
-      }
-
-      .date {
-        font-size: 42px;
-      }
-
-      .primary {
-        font-size: 64px;
-      }
-
-      .secondary {
-        font-size: 32px;
-      }
-
-      .refreshNote {
-        font-size: 18px;
-      }
-    }
   </style>
 </head>
 <body>
