@@ -146,7 +146,9 @@ async function getNvdaQuote() {
   const json = await fetchJson(
     "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?interval=1m&range=1d",
   );
-  const meta = json.chart?.result?.[0]?.meta;
+  const result = json.chart?.result?.[0];
+  const meta = result?.meta;
+  const prices = result?.indicators?.quote?.[0]?.close || [];
 
   if (!meta?.regularMarketPrice) {
     throw new Error("NVDA quote unavailable");
@@ -158,17 +160,23 @@ async function getNvdaQuote() {
     currency: meta.currency || "USD",
     changePercent: getPercentChange(meta.regularMarketPrice, meta.previousClose),
     marketState: meta.marketState || "UNKNOWN",
+    history: compactSeries(prices),
   };
 }
 
 async function getBtcUsdtQuote() {
   try {
-    const json = await fetchJson("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT");
+    const [quote, klines] = await Promise.all([
+      fetchJson("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"),
+      fetchJson("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=30m&limit=48"),
+    ]);
+
     return {
       symbol: "BTCUSDT",
-      price: Number(json.lastPrice),
+      price: Number(quote.lastPrice),
       currency: "USDT",
-      changePercent: Number(json.priceChangePercent),
+      changePercent: Number(quote.priceChangePercent),
+      history: compactSeries(klines.map((item) => Number(item[4]))),
     };
   } catch (error) {
     const json = await fetchJson("https://api.coinbase.com/v2/prices/BTC-USD/spot");
@@ -177,6 +185,7 @@ async function getBtcUsdtQuote() {
       price: Number(json.data?.amount),
       currency: "USDT",
       changePercent: null,
+      history: [],
     };
   }
 }
@@ -249,6 +258,21 @@ function getPercentChange(price, previousClose) {
   }
 
   return ((price - previousClose) / previousClose) * 100;
+}
+
+function compactSeries(values, targetLength = 28) {
+  const cleanValues = values.filter((value) => Number.isFinite(value));
+  if (cleanValues.length <= targetLength) {
+    return cleanValues;
+  }
+
+  const step = cleanValues.length / targetLength;
+  const series = [];
+  for (let index = 0; index < targetLength; index += 1) {
+    series.push(cleanValues[Math.floor(index * step)]);
+  }
+
+  return series;
 }
 
 function formatDate(date, timezone) {
@@ -513,6 +537,28 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       line-height: 1;
     }
 
+    .sparkline {
+      width: 100%;
+      height: 52px;
+      margin-top: 18px;
+      display: block;
+    }
+
+    .sparkline path,
+    .sparkline polyline {
+      fill: none;
+      stroke: #000;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .markets .sparkline {
+      width: 56%;
+      height: 44px;
+      margin-top: 16px;
+    }
+
     .cardCompact .marketRow,
     .cardCompact .marketPrice,
     .cardCompact .marketMove {
@@ -632,7 +678,32 @@ function renderMarketCard(label, quote, className = "") {
           <span class="movePercent">${formatPercent(quote.changePercent)}</span>
         </div>
       </div>
+      ${renderSparkline(quote.history)}
     </section>`;
+}
+
+function renderSparkline(values) {
+  if (!values || values.length < 2) {
+    return "";
+  }
+
+  const width = 260;
+  const height = 52;
+  const padding = 5;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values
+    .map((value, index) => {
+      const x = padding + (index / (values.length - 1)) * (width - padding * 2);
+      const y = padding + ((max - value) / range) * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="${points}"></polyline>
+      </svg>`;
 }
 
 function getMovement(value) {
@@ -686,7 +757,6 @@ function renderWeatherCard(weather) {
   return `<section class="card cardWeather">
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
-      <div class="secondary">${escapeHtml(weather.condition)} in ${escapeHtml(weather.city)}</div>
       <div class="metrics">
         <div class="metric"><strong>Feels</strong>${formatTemp(weather.feelsLike)}</div>
         <div class="metric"><strong>High/Low</strong>${formatTemp(weather.high)} / ${formatTemp(weather.low)}</div>
