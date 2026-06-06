@@ -346,7 +346,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     body {
       box-sizing: border-box;
-      padding: 22px 24px;
+      padding: 18px 20px;
     }
 
     .shell {
@@ -364,7 +364,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .date {
       float: left;
-      font-size: 42px;
+      font-size: 50px;
       line-height: 1;
       font-weight: 700;
       letter-spacing: 1px;
@@ -376,7 +376,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       border: 2px solid #000;
       border-radius: 999px;
       padding: 5px 10px;
-      font-size: 18px;
+      font-size: 22px;
       line-height: 1;
       font-weight: 700;
       white-space: nowrap;
@@ -387,8 +387,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       position: relative;
       border: 3px solid #000;
       border-radius: 22px;
-      margin: 10px 0;
-      padding: 15px 17px;
+      margin: 9px 0;
+      padding: 14px 15px;
       background: #fff;
       overflow: visible;
     }
@@ -397,24 +397,12 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       overflow: hidden;
     }
 
-    .column {
-      width: 48%;
-    }
-
-    .leftColumn {
-      float: left;
-    }
-
-    .rightColumn {
-      float: right;
-    }
-
     .cardCompact {
-      min-height: 174px;
+      min-height: 176px;
     }
 
     .cardTall {
-      min-height: 226px;
+      min-height: 244px;
     }
 
     .cardWeather {
@@ -441,7 +429,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       border-radius: 999px;
       padding: 4px 10px;
       margin-bottom: 13px;
-      font-size: 19px;
+      font-size: 24px;
       line-height: 1;
       font-weight: 700;
       text-transform: uppercase;
@@ -449,7 +437,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .primary {
-      font-size: 60px;
+      font-size: 76px;
       line-height: 1.05;
       font-weight: 700;
       white-space: nowrap;
@@ -475,14 +463,14 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .arrow {
       display: block;
-      font-size: 54px;
+      font-size: 64px;
       line-height: 0.9;
     }
 
     .movePercent {
       display: block;
       margin-top: 7px;
-      font-size: 25px;
+      font-size: 30px;
       line-height: 1;
     }
 
@@ -494,55 +482,55 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .cardCompact .marketMove {
       position: absolute;
-      right: 16px;
-      bottom: 15px;
+      right: 14px;
+      bottom: 14px;
       width: auto;
     }
 
     .cardCompact .arrow {
-      font-size: 46px;
+      font-size: 56px;
     }
 
     .cardCompact .movePercent {
-      font-size: 22px;
+      font-size: 27px;
     }
 
     .secondary {
       margin-top: 10px;
-      font-size: 26px;
+      font-size: 33px;
       line-height: 1.2;
     }
 
     .cardCompact .primary {
-      font-size: 47px;
+      font-size: 76px;
     }
 
     .cardCompact .secondary {
-      font-size: 24px;
+      font-size: 30px;
     }
 
     .cardTall .primary {
-      font-size: 58px;
+      font-size: 74px;
     }
 
-    .split {
-      display: table;
+    .metrics {
       width: 100%;
-      table-layout: fixed;
-      margin-top: 12px;
+      margin-top: 16px;
     }
 
-    .cell {
-      display: table-cell;
-      width: 33.33%;
-      padding-right: 12px;
-      font-size: 25px;
+    .metric {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 48%;
+      padding: 0 12px 14px 0;
+      font-size: 32px;
       line-height: 1.2;
+      vertical-align: top;
     }
 
-    .cell strong {
+    .metric strong {
       display: block;
-      font-size: 19px;
+      font-size: 25px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -551,35 +539,25 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       body {
         padding: 16px;
       }
-
-      .column {
-        width: 100%;
-      }
-
-      .leftColumn,
-      .rightColumn {
-        float: none;
-      }
-
       .cardCompact,
       .cardTall {
         min-height: 0;
       }
 
       .date {
-        font-size: 34px;
+        font-size: 42px;
       }
 
       .primary {
-        font-size: 52px;
+        font-size: 64px;
       }
 
       .secondary {
-        font-size: 28px;
+        font-size: 32px;
       }
 
       .refreshNote {
-        font-size: 15px;
+        font-size: 18px;
       }
     }
   </style>
@@ -592,13 +570,9 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     </section>
 
     <section class="board">
-      <div class="column leftColumn">
-        ${renderMarketCard("NVDA", nvda, "cardCompact")}
-        ${renderIndoorCard(indoor)}
-      </div>
-      <div class="column rightColumn">
-        ${renderMarketCard("BTCUSDT", btc, "cardCompact")}
-      </div>
+      ${renderMarketCard("NVDA", nvda, "cardCompact")}
+      ${renderMarketCard("BTCUSDT", btc, "cardCompact")}
+      ${renderIndoorCard(indoor)}
       ${renderWeatherCard(weather)}
     </section>
 
@@ -681,15 +655,12 @@ function renderWeatherCard(weather) {
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
       <div class="secondary">${escapeHtml(weather.condition)} in ${escapeHtml(weather.city)}</div>
-      <div class="split">
-        <div class="cell"><strong>Feels</strong>${formatTemp(weather.feelsLike)}</div>
-        <div class="cell"><strong>High/Low</strong>${formatTemp(weather.high)} / ${formatTemp(weather.low)}</div>
-        <div class="cell"><strong>Rain</strong>${Number.isFinite(weather.rainChance) ? `${weather.rainChance}%` : "--"}</div>
-      </div>
-      <div class="split">
-        <div class="cell"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
-        <div class="cell"><strong>Wind</strong>${Number.isFinite(weather.wind) ? `${Math.round(weather.wind)} km/h` : "--"}</div>
-        <div class="cell"></div>
+      <div class="metrics">
+        <div class="metric"><strong>Feels</strong>${formatTemp(weather.feelsLike)}</div>
+        <div class="metric"><strong>High/Low</strong>${formatTemp(weather.high)} / ${formatTemp(weather.low)}</div>
+        <div class="metric"><strong>Rain</strong>${Number.isFinite(weather.rainChance) ? `${weather.rainChance}%` : "--"}</div>
+        <div class="metric"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
+        <div class="metric"><strong>Wind</strong>${Number.isFinite(weather.wind) ? `${Math.round(weather.wind)} km/h` : "--"}</div>
       </div>
     </section>`;
 }
