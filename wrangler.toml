@@ -2,3 +2,7 @@ name = "curly-heart-72e2"
 main = "src/index.js"
 compatibility_date = "2026-06-06"
 workers_dev = true
+
+[[kv_namespaces]]
+binding = "DASHBOARD_KV"
+id = "b2978cbf39574f33939588e2b49337b6"

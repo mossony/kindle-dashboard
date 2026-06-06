@@ -7,6 +7,7 @@ const DEFAULT_LOCATION = {
   timezone: "America/Toronto",
 };
 
+const INDOOR_KV_KEY = "home:indoor";
 let indoorSnapshot = null;
 
 export default {
@@ -25,7 +26,7 @@ export default {
     }
 
     if (url.pathname === "/api/home") {
-      return handleHomeApi(request);
+      return handleHomeApi(request, env);
     }
 
     if (url.pathname !== "/" && url.pathname !== "/kindle") {
@@ -44,7 +45,7 @@ export default {
       location,
       nvda: valueOrUnavailable(nvdaResult),
       btc: valueOrUnavailable(btcResult),
-      indoor: indoorSnapshot,
+      indoor: await getIndoorSnapshot(env),
       weather: valueOrUnavailable(weatherResult),
     };
 
@@ -58,9 +59,9 @@ export default {
   },
 };
 
-async function handleHomeApi(request) {
+async function handleHomeApi(request, env) {
   if (request.method === "GET") {
-    return jsonResponse({ indoor: indoorSnapshot });
+    return jsonResponse({ indoor: await getIndoorSnapshot(env) });
   }
 
   if (request.method !== "POST") {
@@ -87,7 +88,25 @@ async function handleHomeApi(request) {
     updatedAt: new Date().toISOString(),
   };
 
+  if (env.DASHBOARD_KV) {
+    await env.DASHBOARD_KV.put(INDOOR_KV_KEY, JSON.stringify(indoorSnapshot));
+  }
+
   return jsonResponse({ ok: true, indoor: indoorSnapshot });
+}
+
+async function getIndoorSnapshot(env) {
+  if (!env.DASHBOARD_KV) {
+    return indoorSnapshot;
+  }
+
+  const stored = await env.DASHBOARD_KV.get(INDOOR_KV_KEY, { type: "json" });
+  if (stored) {
+    indoorSnapshot = stored;
+    return stored;
+  }
+
+  return indoorSnapshot;
 }
 
 function jsonResponse(body, status = 200) {
