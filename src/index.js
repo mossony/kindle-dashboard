@@ -42,6 +42,7 @@ export default {
 
     const dashboard = {
       date: formatDate(new Date(), location.timezone),
+      generatedAt: formatTime(new Date(), location.timezone),
       location,
       nvda: valueOrUnavailable(nvdaResult),
       btc: valueOrUnavailable(btcResult),
@@ -259,6 +260,15 @@ function formatDate(date, timezone) {
   });
 }
 
+function formatTime(date, timezone) {
+  return date.toLocaleTimeString("en-CA", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 function formatMoney(value, digits = 2) {
   if (!Number.isFinite(value)) {
     return "--";
@@ -315,7 +325,7 @@ function weatherCodeToText(code) {
   return weatherCodes[code] || "Weather";
 }
 
-function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
+function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weather }) {
   return `<!doctype html>
 <html>
 <head>
@@ -342,6 +352,16 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
     .shell {
       max-width: 760px;
       margin: 0 auto;
+      position: relative;
+    }
+
+    .refreshNote {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 700;
     }
 
     .masthead {
@@ -458,11 +478,17 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
       .secondary {
         font-size: 28px;
       }
+
+      .refreshNote {
+        font-size: 17px;
+      }
     }
   </style>
 </head>
 <body>
   <main class="shell">
+    <div class="refreshNote">Refresh 5m &middot; ${escapeHtml(generatedAt)}</div>
+
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
     </section>
