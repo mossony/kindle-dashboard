@@ -346,7 +346,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     body {
       box-sizing: border-box;
-      padding: 18px 20px;
+      padding: 20px;
     }
 
     .shell {
@@ -356,8 +356,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .masthead {
-      margin: 0 4px 16px;
-      padding: 4px 0 10px;
+      margin: 0 0 20px;
+      padding: 0 0 20px;
       border-bottom: 3px solid #000;
       overflow: hidden;
     }
@@ -386,9 +386,9 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       box-sizing: border-box;
       position: relative;
       border: 3px solid #000;
-      border-radius: 22px;
-      margin: 9px 0;
-      padding: 14px 15px;
+      border-radius: 24px;
+      margin: 0 0 20px;
+      padding: 20px;
       background: #fff;
       overflow: visible;
     }
@@ -398,16 +398,11 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .cardCompact {
-      min-height: 176px;
+      min-height: 186px;
     }
 
     .cardTall {
-      min-height: 244px;
-    }
-
-    .cardWeather {
-      clear: both;
-      margin-top: 12px;
+      min-height: 254px;
     }
 
     .tag {
@@ -427,8 +422,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       display: inline-block;
       border: 2px solid #000;
       border-radius: 999px;
-      padding: 4px 10px;
-      margin-bottom: 13px;
+      padding: 5px 12px;
+      margin-bottom: 20px;
       font-size: 24px;
       line-height: 1;
       font-weight: 700;
@@ -469,7 +464,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .movePercent {
       display: block;
-      margin-top: 7px;
+      margin-top: 8px;
       font-size: 30px;
       line-height: 1;
     }
@@ -482,8 +477,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .cardCompact .marketMove {
       position: absolute;
-      right: 14px;
-      bottom: 14px;
+      right: 20px;
+      bottom: 20px;
       width: auto;
     }
 
@@ -496,7 +491,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .secondary {
-      margin-top: 10px;
+      margin-top: 20px;
       font-size: 33px;
       line-height: 1.2;
     }
@@ -515,14 +510,14 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .metrics {
       width: 100%;
-      margin-top: 16px;
+      margin-top: 20px;
     }
 
     .metric {
       display: inline-block;
       box-sizing: border-box;
       width: 48%;
-      padding: 0 12px 14px 0;
+      padding: 0 20px 20px 0;
       font-size: 32px;
       line-height: 1.2;
       vertical-align: top;
@@ -537,7 +532,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     @media (max-width: 520px) {
       body {
-        padding: 16px;
+        padding: 20px;
       }
       .cardCompact,
       .cardTall {
