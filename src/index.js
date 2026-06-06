@@ -405,6 +405,33 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       overflow: hidden;
     }
 
+    .markets {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 0;
+      margin-bottom: 20px;
+    }
+
+    .marketSlot {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+    }
+
+    .marketSlotLeft {
+      padding-right: 10px;
+    }
+
+    .marketSlotRight {
+      padding-left: 10px;
+    }
+
+    .markets .card {
+      margin-bottom: 0;
+      min-height: 210px;
+    }
+
     .cardCompact {
       min-height: 186px;
     }
@@ -508,6 +535,22 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       font-size: 76px;
     }
 
+    .markets .cardCompact .primary {
+      font-size: 54px;
+    }
+
+    .markets .cardCompact .secondary {
+      font-size: 28px;
+    }
+
+    .markets .cardCompact .arrow {
+      font-size: 50px;
+    }
+
+    .markets .cardCompact .movePercent {
+      font-size: 24px;
+    }
+
     .cardCompact .secondary {
       font-size: 30px;
     }
@@ -548,8 +591,10 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     </section>
 
     <section class="board">
-      ${renderMarketCard("NVDA", nvda, "cardCompact")}
-      ${renderMarketCard("BTCUSDT", btc, "cardCompact")}
+      <section class="markets">
+        <div class="marketSlot marketSlotLeft">${renderMarketCard("NVDA", nvda, "cardCompact")}</div>
+        <div class="marketSlot marketSlotRight">${renderMarketCard("BTCUSDT", btc, "cardCompact")}</div>
+      </section>
       ${renderIndoorCard(indoor)}
       ${renderWeatherCard(weather)}
     </section>
