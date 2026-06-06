@@ -361,7 +361,9 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
       border: 4px solid #000;
       margin: 16px 0;
       padding: 18px 20px;
-      page-break-inside: avoid;
+      background: #fff;
+      clear: both;
+      overflow: visible;
     }
 
     .cardLabel {
