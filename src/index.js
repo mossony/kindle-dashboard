@@ -341,48 +341,54 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       padding: 0;
       background: #fff;
       color: #000;
-      font-family: Verdana, "Trebuchet MS", Arial, sans-serif;
+      font-family: Verdana, "Trebuchet MS", sans-serif;
     }
 
     body {
       box-sizing: border-box;
-      padding: 22px 28px;
+      padding: 22px 24px;
     }
 
     .shell {
-      max-width: 760px;
+      max-width: 720px;
       margin: 0 auto;
       position: relative;
     }
 
-    .refreshNote {
-      position: absolute;
-      top: 14px;
-      right: 18px;
-      font-size: 20px;
-      line-height: 1;
-      font-weight: 700;
-    }
-
     .masthead {
-      border: 5px solid #000;
-      padding: 16px 20px;
-      margin-bottom: 16px;
+      margin: 0 4px 16px;
+      padding: 4px 0 10px;
+      border-bottom: 3px solid #000;
+      overflow: hidden;
     }
 
     .date {
-      font-size: 40px;
+      float: left;
+      font-size: 42px;
       line-height: 1;
       font-weight: 700;
       letter-spacing: 1px;
     }
 
+    .refreshNote {
+      float: right;
+      margin-top: 11px;
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .card {
       box-sizing: border-box;
       position: relative;
-      border: 4px solid #000;
-      margin: 14px 0;
-      padding: 16px 20px;
+      border: 3px solid #000;
+      border-radius: 22px;
+      margin: 10px 0;
+      padding: 15px 17px;
       background: #fff;
       overflow: visible;
     }
@@ -391,46 +397,63 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       overflow: hidden;
     }
 
-    .cardMini {
-      width: 47%;
-      min-height: 190px;
+    .column {
+      width: 48%;
     }
 
-    .cardLeft {
+    .leftColumn {
       float: left;
-      clear: left;
     }
 
-    .cardRight {
+    .rightColumn {
       float: right;
-      clear: right;
     }
 
-    .cardDrop {
-      margin-top: 42px;
+    .rightColumn {
+      padding-top: 34px;
     }
 
-    .cardIndoor {
-      min-height: 190px;
+    .cardCompact {
+      min-height: 174px;
     }
 
-    .cardWide {
+    .cardTall {
+      min-height: 226px;
+    }
+
+    .cardWeather {
       clear: both;
-      width: 100%;
+      margin-top: 12px;
+    }
+
+    .tag {
+      display: inline-block;
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 19px;
+      line-height: 1;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: #fff;
     }
 
     .cardLabel {
-      font-size: 27px;
+      display: inline-block;
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 4px 10px;
+      margin-bottom: 13px;
+      font-size: 19px;
+      line-height: 1;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 2px;
-      border-bottom: 2px solid #000;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
+      letter-spacing: 1px;
     }
 
     .primary {
-      font-size: 66px;
+      font-size: 60px;
       line-height: 1.05;
       font-weight: 700;
       white-space: nowrap;
@@ -456,55 +479,54 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .arrow {
       display: block;
-      font-size: 64px;
+      font-size: 54px;
       line-height: 0.9;
     }
 
     .movePercent {
       display: block;
-      margin-top: 8px;
-      font-size: 31px;
+      margin-top: 7px;
+      font-size: 25px;
       line-height: 1;
     }
 
-    .cardMini .cardLabel {
-      font-size: 23px;
-      letter-spacing: 1px;
-    }
-
-    .cardMini .primary {
-      font-size: 48px;
-    }
-
-    .cardMini .secondary {
-      font-size: 25px;
-    }
-
-    .cardMini .marketRow,
-    .cardMini .marketPrice,
-    .cardMini .marketMove {
+    .cardCompact .marketRow,
+    .cardCompact .marketPrice,
+    .cardCompact .marketMove {
       display: block;
     }
 
-    .cardMini .marketMove {
+    .cardCompact .marketMove {
       position: absolute;
-      right: 18px;
-      bottom: 18px;
+      right: 16px;
+      bottom: 15px;
       width: auto;
     }
 
-    .cardMini .arrow {
+    .cardCompact .arrow {
       font-size: 46px;
     }
 
-    .cardMini .movePercent {
+    .cardCompact .movePercent {
       font-size: 22px;
     }
 
     .secondary {
       margin-top: 10px;
-      font-size: 32px;
+      font-size: 26px;
       line-height: 1.2;
+    }
+
+    .cardCompact .primary {
+      font-size: 47px;
+    }
+
+    .cardCompact .secondary {
+      font-size: 24px;
+    }
+
+    .cardTall .primary {
+      font-size: 58px;
     }
 
     .split {
@@ -518,35 +540,35 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       display: table-cell;
       width: 33.33%;
       padding-right: 12px;
-      font-size: 29px;
+      font-size: 25px;
       line-height: 1.2;
     }
 
     .cell strong {
       display: block;
-      font-size: 22px;
+      font-size: 19px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
 
     @media (max-width: 520px) {
       body {
-        padding: 18px;
+        padding: 16px;
       }
 
-      .cardMini {
+      .column {
         width: 100%;
-        min-height: 0;
       }
 
-      .cardLeft,
-      .cardRight {
+      .leftColumn,
+      .rightColumn {
         float: none;
-        clear: both;
+        padding-top: 0;
       }
 
-      .cardDrop {
-        margin-top: 14px;
+      .cardCompact,
+      .cardTall {
+        min-height: 0;
       }
 
       .date {
@@ -562,33 +584,30 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       }
 
       .refreshNote {
-        font-size: 17px;
+        font-size: 15px;
       }
     }
   </style>
 </head>
 <body>
   <main class="shell">
-    <div class="refreshNote">Refresh 5m &middot; ${escapeHtml(generatedAt)}</div>
-
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
+      <div class="refreshNote">5m &middot; ${escapeHtml(generatedAt)}</div>
     </section>
 
     <section class="board">
-      ${renderMarketCard("NVDA", nvda, "cardMini cardLeft")}
-      ${renderMarketCard("BTCUSDT", btc, "cardMini cardRight cardDrop")}
-      ${renderIndoorCard(indoor)}
+      <div class="column leftColumn">
+        ${renderMarketCard("NVDA", nvda, "cardCompact")}
+        ${renderIndoorCard(indoor)}
+      </div>
+      <div class="column rightColumn">
+        ${renderMarketCard("BTCUSDT", btc, "cardCompact")}
+      </div>
       ${renderWeatherCard(weather)}
     </section>
 
   </main>
-
-  <script>
-    setTimeout(function () {
-      location.reload();
-    }, ${REFRESH_SECONDS * 1000});
-  </script>
 </body>
 </html>`;
 }
@@ -633,7 +652,7 @@ function getMovement(value) {
 
 function renderIndoorCard(indoor) {
   if (!indoor) {
-    return `<section class="card cardMini cardLeft cardIndoor">
+    return `<section class="card cardTall">
       <div class="cardLabel">Indoor</div>
       <div class="primary">--</div>
       <div class="secondary">Waiting for HomePod</div>
@@ -650,7 +669,7 @@ function renderIndoorCard(indoor) {
         hour12: false,
       })}`;
 
-  return `<section class="card cardMini cardLeft cardIndoor">
+  return `<section class="card cardTall">
       <div class="cardLabel">Indoor</div>
       <div class="primary">${formatTemp(indoor.temperature)}</div>
       <div class="secondary">${escapeHtml(indoor.source)}${updatedLabel}</div>
@@ -663,7 +682,7 @@ function renderWeatherCard(weather) {
     return renderUnavailableCard("Weather");
   }
 
-  return `<section class="card cardWide">
+  return `<section class="card cardWeather">
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
       <div class="secondary">${escapeHtml(weather.condition)} in ${escapeHtml(weather.city)}</div>
