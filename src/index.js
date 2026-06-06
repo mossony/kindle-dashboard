@@ -409,10 +409,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       float: right;
     }
 
-    .rightColumn {
-      padding-top: 34px;
-    }
-
     .cardCompact {
       min-height: 174px;
     }
@@ -563,7 +559,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       .leftColumn,
       .rightColumn {
         float: none;
-        padding-top: 0;
       }
 
       .cardCompact,
