@@ -636,6 +636,23 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       letter-spacing: 1px;
     }
 
+    .card .source {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 22px;
+      font-weight: 700;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .card .source .humidity {
+      font-size: 18px;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -732,20 +749,23 @@ function renderIndoorCard(indoor) {
   }
 
   const updatedAt = new Date(indoor.updatedAt);
-  const updatedLabel = Number.isNaN(updatedAt.getTime())
+  const updatedTime = Number.isNaN(updatedAt.getTime())
     ? ""
-    : ` &middot; ${updatedAt.toLocaleTimeString("en-CA", {
+    : `${updatedAt.toLocaleTimeString("en-CA", {
         timeZone: DEFAULT_LOCATION.timezone,
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       })}`;
 
+  const humidityHtml = Number.isFinite(indoor.humidity)
+    ? `<div class="humidity">Humidity ${Math.round(indoor.humidity)}%</div>`
+    : "";
+
   return `<section class="card cardTall">
       <div class="cardLabel">Indoor</div>
       <div class="primary">${formatTemp(indoor.temperature)}</div>
-      <div class="secondary">${escapeHtml(indoor.source)}${updatedLabel}</div>
-      ${Number.isFinite(indoor.humidity) ? `<div class="secondary">Humidity ${Math.round(indoor.humidity)}%</div>` : ""}
+      <div class="source">${escapeHtml(indoor.source)} ${escapeHtml(updatedTime)}${humidityHtml}</div>
     </section>`;
 }
 
