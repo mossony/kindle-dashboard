@@ -593,7 +593,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   <main class="shell">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote">5m &middot; ${escapeHtml(generatedAt)}</div>
+      <div class="refreshNote">Refresh at &middot; ${escapeHtml(generatedAt)}</div>
     </section>
 
     <section class="board">
