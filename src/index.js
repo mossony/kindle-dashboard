@@ -364,14 +364,18 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .masthead {
+      display: table;
+      width: 100%;
       margin: 0 0 20px;
       padding: 0 0 20px;
       border-bottom: 3px solid #000;
-      overflow: hidden;
+      table-layout: fixed;
     }
 
     .date {
-      float: left;
+      display: table-cell;
+      width: 62%;
+      vertical-align: middle;
       font-size: 50px;
       line-height: 1;
       font-weight: 700;
@@ -379,8 +383,13 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .refreshNote {
-      float: right;
-      margin-top: 11px;
+      display: table-cell;
+      vertical-align: middle;
+      text-align: right;
+    }
+
+    .refreshPill {
+      display: inline-block;
       border: 2px solid #000;
       border-radius: 999px;
       padding: 5px 10px;
@@ -587,7 +596,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   <main class="shell">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote">30s &middot; ${escapeHtml(generatedAt)}</div>
+      <div class="refreshNote"><span class="refreshPill">30s &middot; ${escapeHtml(generatedAt)}</span></div>
     </section>
 
     <section class="board">
