@@ -336,7 +336,7 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
 
     body {
       box-sizing: border-box;
-      padding: 26px 32px;
+      padding: 22px 28px;
     }
 
     .shell {
@@ -346,12 +346,12 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
 
     .masthead {
       border: 5px solid #000;
-      padding: 18px 20px;
-      margin-bottom: 18px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
     }
 
     .date {
-      font-size: 34px;
+      font-size: 40px;
       line-height: 1;
       font-weight: 700;
       letter-spacing: 1px;
@@ -359,15 +359,15 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
 
     .card {
       border: 4px solid #000;
-      margin: 16px 0;
-      padding: 18px 20px;
+      margin: 14px 0;
+      padding: 16px 20px;
       background: #fff;
       clear: both;
       overflow: visible;
     }
 
     .cardLabel {
-      font-size: 22px;
+      font-size: 27px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 2px;
@@ -377,7 +377,7 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
     }
 
     .primary {
-      font-size: 54px;
+      font-size: 66px;
       line-height: 1.05;
       font-weight: 700;
       white-space: nowrap;
@@ -403,20 +403,20 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
 
     .arrow {
       display: block;
-      font-size: 52px;
+      font-size: 64px;
       line-height: 0.9;
     }
 
     .movePercent {
       display: block;
       margin-top: 8px;
-      font-size: 25px;
+      font-size: 31px;
       line-height: 1;
     }
 
     .secondary {
       margin-top: 10px;
-      font-size: 27px;
+      font-size: 32px;
       line-height: 1.2;
     }
 
@@ -431,13 +431,13 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
       display: table-cell;
       width: 33.33%;
       padding-right: 12px;
-      font-size: 23px;
+      font-size: 29px;
       line-height: 1.2;
     }
 
     .cell strong {
       display: block;
-      font-size: 18px;
+      font-size: 22px;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -448,15 +448,15 @@ function renderDashboard({ date, location, nvda, btc, indoor, weather }) {
       }
 
       .date {
-        font-size: 30px;
+        font-size: 34px;
       }
 
       .primary {
-        font-size: 44px;
+        font-size: 52px;
       }
 
       .secondary {
-        font-size: 24px;
+        font-size: 28px;
       }
     }
   </style>
