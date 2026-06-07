@@ -566,6 +566,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .shell {
+      --gap: 20px;
       width: 560px;
       max-width: none;
       margin: 0 auto;
@@ -582,8 +583,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     .masthead {
       display: table;
       width: 100%;
-      margin: 0 0 20px;
-      padding: 0 0 20px;
+      margin: 0 0 var(--gap);
+      padding: 0 0 var(--gap);
       border-bottom: 3px solid #000;
       table-layout: fixed;
     }
@@ -620,7 +621,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       position: relative;
       border: 3px solid #000;
       border-radius: 24px;
-      margin: 0 0 20px;
+      margin: 0 0 var(--gap);
       padding: 20px;
       background: #fff;
       overflow: visible;
@@ -635,7 +636,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       width: 100%;
       table-layout: fixed;
       border-spacing: 0;
-      margin-bottom: 20px;
+      margin-bottom: var(--gap);
     }
 
     .marketSlot,
@@ -647,12 +648,12 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .marketSlotLeft,
     .bottomSlotLeft {
-      padding-right: 10px;
+      padding-right: calc(var(--gap) / 2);
     }
 
     .marketSlotRight,
     .bottomSlotRight {
-      padding-left: 10px;
+      padding-left: calc(var(--gap) / 2);
     }
 
     .markets .card {
@@ -946,8 +947,36 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .masthead {
-      margin-bottom: 20px;
-      padding-bottom: 20px;
+      margin-bottom: var(--gap);
+      padding-bottom: var(--gap);
+    }
+
+    .shell.hasEvent {
+      min-height: calc(100vh - 40px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hasEvent .board {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap);
+    }
+
+    .hasEvent .bottomRow {
+      display: flex;
+      gap: var(--gap);
+      flex: 1;
+      min-height: 300px;
+    }
+
+    .hasEvent .bottomSlot {
+      display: block;
+      flex: 1;
+      padding-left: 0;
+      padding-right: 0;
+      width: auto;
     }
 
     .hasEvent .date {
@@ -960,13 +989,13 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .markets {
-      margin-bottom: 20px;
+      margin-bottom: 0;
     }
 
     .hasEvent .card {
       border-width: 3px;
       border-radius: 24px;
-      margin-bottom: 20px;
+      margin-bottom: 0;
       padding: 20px;
     }
 
@@ -1036,7 +1065,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .bottomRow .card {
-      min-height: 330px;
+      height: 100%;
+      min-height: 0;
     }
 
     .hasEvent .bottomRow .cardLabel {
