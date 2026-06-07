@@ -295,7 +295,7 @@ async function getBlueJaysHomeGame(date) {
   }
 
   return {
-    title: "Blue Jays Game",
+    title: "Blue Jays",
     subtitle: "",
     time: formatEventTime(game.gameDate, DEFAULT_LOCATION.timezone),
     source: "MLB",
@@ -1036,29 +1036,29 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .bottomRow .card {
-      min-height: 286px;
+      min-height: 296px;
     }
 
     .hasEvent .bottomRow .cardLabel {
-      font-size: 19px;
+      font-size: 21px;
       margin-bottom: 12px;
     }
 
     .hasEvent .bottomRow .primary {
-      font-size: 48px;
+      font-size: 54px;
     }
 
     .hasEvent .bottomRow .metric {
-      padding-bottom: 10px;
-      font-size: 23px;
+      padding-bottom: 12px;
+      font-size: 25px;
     }
 
     .hasEvent .bottomRow .metric strong {
-      font-size: 19px;
+      font-size: 22px;
     }
 
     .hasEvent .eventTitle {
-      font-size: 29px;
+      font-size: 32px;
     }
 
     .hasEvent .eventSubtitle {
@@ -1068,13 +1068,13 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .hasEvent .eventTime {
       margin-top: 20px;
-      font-size: 29px;
+      font-size: 32px;
     }
 
     .hasEvent .eventWarning {
       margin-top: 26px;
       padding-top: 12px;
-      font-size: 22px;
+      font-size: 24px;
     }
   </style>
 </head>
@@ -1270,7 +1270,7 @@ function renderWeatherCard(weather, compact = false) {
 }
 
 function renderRogersCentreCard(event) {
-  const time = event.time ? `${escapeHtml(event.time)} · ` : "";
+  const time = event.time ? `${escapeHtml(event.time)} ` : "";
   const subtitle = event.subtitle ? `<div class="eventSubtitle">${escapeHtml(event.subtitle)}</div>` : "";
 
   return `<section class="card cardEvent">
