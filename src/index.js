@@ -588,15 +588,21 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .indoorChart {
-      width: 100%;
-      height: 70px;
-      margin-top: 20px;
+      position: absolute;
+      right: 20px;
+      bottom: 48px;
+      width: 46%;
+      height: 52px;
+      margin-top: 0;
     }
 
     .timeAxis {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
       display: table;
-      width: 100%;
-      margin-top: 6px;
+      width: 46%;
+      margin-top: 0;
       font-size: 22px;
       line-height: 1;
       font-weight: 700;
