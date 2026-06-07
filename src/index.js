@@ -8,6 +8,7 @@ const DEFAULT_LOCATION = {
 };
 
 const INDOOR_KV_KEY = "home:indoor";
+const INDOOR_HISTORY_LIMIT = 96;
 let indoorSnapshot = null;
 
 export default {
@@ -82,11 +83,17 @@ async function handleHomeApi(request, env) {
   }
 
   const humidity = Number(payload.indoorHumidity ?? payload.humidity);
+  const previousIndoor = await getIndoorSnapshot(env);
+  const updatedAt = new Date().toISOString();
+  const history = normalizeIndoorHistory(previousIndoor);
+  history.push({ temperature, updatedAt });
+
   indoorSnapshot = {
     temperature,
     humidity: Number.isFinite(humidity) ? humidity : null,
     source: payload.source ? String(payload.source) : "HomePod",
-    updatedAt: new Date().toISOString(),
+    updatedAt,
+    history: history.slice(-INDOOR_HISTORY_LIMIT),
   };
 
   if (env.DASHBOARD_KV) {
@@ -108,6 +115,27 @@ async function getIndoorSnapshot(env) {
   }
 
   return indoorSnapshot;
+}
+
+function normalizeIndoorHistory(indoor) {
+  if (!indoor) {
+    return [];
+  }
+
+  if (Array.isArray(indoor.history)) {
+    return indoor.history
+      .map((point) => ({
+        temperature: Number(point.temperature),
+        updatedAt: String(point.updatedAt || indoor.updatedAt || ""),
+      }))
+      .filter((point) => Number.isFinite(point.temperature) && point.updatedAt);
+  }
+
+  if (Number.isFinite(indoor.temperature) && indoor.updatedAt) {
+    return [{ temperature: indoor.temperature, updatedAt: indoor.updatedAt }];
+  }
+
+  return [];
 }
 
 function jsonResponse(body, status = 200) {
@@ -559,6 +587,31 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       margin-top: 16px;
     }
 
+    .indoorChart {
+      width: 100%;
+      height: 70px;
+      margin-top: 20px;
+    }
+
+    .timeAxis {
+      display: table;
+      width: 100%;
+      margin-top: 6px;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .axisStart,
+    .axisEnd {
+      display: table-cell;
+      width: 50%;
+    }
+
+    .axisEnd {
+      text-align: right;
+    }
+
     .cardCompact .marketRow,
     .cardCompact .marketPrice,
     .cardCompact .marketMove {
@@ -723,6 +776,37 @@ function renderSparkline(values) {
       </svg>`;
 }
 
+function renderIndoorTrend(indoor) {
+  const history = normalizeIndoorHistory(indoor);
+  if (history.length < 2) {
+    return "";
+  }
+
+  const values = history.map((point) => point.temperature);
+  const start = formatAxisTime(history[0]?.updatedAt);
+  const end = formatAxisTime(history[history.length - 1]?.updatedAt);
+
+  return `${renderSparkline(values).replace('class="sparkline"', 'class="sparkline indoorChart"')}
+      <div class="timeAxis">
+        <span class="axisStart">${escapeHtml(start)}</span>
+        <span class="axisEnd">${escapeHtml(end)}</span>
+      </div>`;
+}
+
+function formatAxisTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "--:--";
+  }
+
+  return date.toLocaleTimeString("en-CA", {
+    timeZone: DEFAULT_LOCATION.timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 function getMovement(value) {
   if (!Number.isFinite(value)) {
     return { arrow: "-" };
@@ -766,6 +850,7 @@ function renderIndoorCard(indoor) {
       <div class="cardLabel">Indoor</div>
       <div class="primary">${formatTemp(indoor.temperature)}</div>
       <div class="source">${escapeHtml(indoor.source)} ${escapeHtml(updatedTime)}${humidityHtml}</div>
+      ${renderIndoorTrend(indoor)}
     </section>`;
 }
 
