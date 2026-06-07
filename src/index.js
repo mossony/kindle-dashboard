@@ -632,10 +632,12 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .markets {
       display: table;
-      width: 100%;
+      width: 580px;
       table-layout: fixed;
-      border-spacing: 0;
+      border-spacing: 20px 0;
       margin-bottom: 20px;
+      margin-left: -10px;
+      margin-right: -10px;
     }
 
     .marketSlot,
@@ -645,16 +647,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       vertical-align: top;
     }
 
-    .marketSlotLeft,
-    .bottomSlotLeft {
-      padding-right: 10px;
-    }
-
-    .marketSlotRight,
-    .bottomSlotRight {
-      padding-left: 10px;
-    }
-
     .markets .card {
       margin-bottom: 0;
       min-height: 210px;
@@ -662,9 +654,11 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .bottomRow {
       display: table;
-      width: 100%;
+      width: 580px;
       table-layout: fixed;
-      border-spacing: 0;
+      border-spacing: 20px 0;
+      margin-left: -10px;
+      margin-right: -10px;
     }
 
     .bottomRow .card {
