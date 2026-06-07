@@ -346,7 +346,7 @@ function formatTemp(value) {
     return "--";
   }
 
-  return `${Math.round(value)}&deg;C`;
+  return `${value.toFixed(1)}&deg;C`;
 }
 
 function weatherCodeToText(code) {
