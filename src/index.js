@@ -86,7 +86,11 @@ async function handleHomeApi(request, env) {
   const previousIndoor = await getIndoorSnapshot(env);
   const updatedAt = new Date().toISOString();
   const history = normalizeIndoorHistory(previousIndoor);
-  history.push({ temperature, updatedAt });
+  history.push({
+    temperature,
+    humidity: Number.isFinite(humidity) ? humidity : null,
+    updatedAt,
+  });
 
   indoorSnapshot = {
     temperature,
@@ -126,13 +130,18 @@ function normalizeIndoorHistory(indoor) {
     return indoor.history
       .map((point) => ({
         temperature: Number(point.temperature),
+        humidity: Number(point.humidity),
         updatedAt: String(point.updatedAt || indoor.updatedAt || ""),
       }))
       .filter((point) => Number.isFinite(point.temperature) && point.updatedAt);
   }
 
   if (Number.isFinite(indoor.temperature) && indoor.updatedAt) {
-    return [{ temperature: indoor.temperature, updatedAt: indoor.updatedAt }];
+    return [{
+      temperature: indoor.temperature,
+      humidity: Number(indoor.humidity),
+      updatedAt: indoor.updatedAt,
+    }];
   }
 
   return [];
@@ -581,6 +590,11 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       stroke-linejoin: round;
     }
 
+    .sparkline .dashedLine {
+      stroke-dasharray: 12 10;
+      stroke-width: 4;
+    }
+
     .markets .sparkline {
       width: 56%;
       height: 44px;
@@ -758,7 +772,7 @@ function renderMarketCard(label, quote, className = "") {
     </section>`;
 }
 
-function renderSparkline(values) {
+function renderSparkline(values, dashedValues = null) {
   if (!values || values.length < 2) {
     return "";
   }
@@ -766,20 +780,30 @@ function renderSparkline(values) {
   const width = 260;
   const height = 52;
   const padding = 5;
+  const usableDashedValues = dashedValues?.filter((value) => Number.isFinite(value)) || [];
+  const points = seriesToPoints(values, width, height, padding);
+  const dashedPoints = dashedValues && usableDashedValues.length >= 2
+    ? seriesToPoints(usableDashedValues, width, height, padding)
+    : "";
+
+  return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="${points}"></polyline>
+        ${dashedPoints ? `<polyline class="dashedLine" points="${dashedPoints}"></polyline>` : ""}
+      </svg>`;
+}
+
+function seriesToPoints(values, width, height, padding) {
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const points = values
+
+  return values
     .map((value, index) => {
       const x = padding + (index / (values.length - 1)) * (width - padding * 2);
       const y = padding + ((max - value) / range) * (height - padding * 2);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-
-  return `<svg class="sparkline" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points="${points}"></polyline>
-      </svg>`;
 }
 
 function renderIndoorTrend(indoor) {
@@ -789,10 +813,13 @@ function renderIndoorTrend(indoor) {
   }
 
   const values = history.map((point) => point.temperature);
+  const humidityValues = history
+    .map((point) => point.humidity)
+    .filter((value) => Number.isFinite(value));
   const start = formatAxisTime(history[0]?.updatedAt);
   const end = formatAxisTime(history[history.length - 1]?.updatedAt);
 
-  return `${renderSparkline(values).replace('class="sparkline"', 'class="sparkline indoorChart"')}
+  return `${renderSparkline(values, humidityValues).replace('class="sparkline"', 'class="sparkline indoorChart"')}
       <div class="timeAxis">
         <span class="axisStart">${escapeHtml(start)}</span>
         <span class="axisEnd">${escapeHtml(end)}</span>
