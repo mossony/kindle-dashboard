@@ -566,7 +566,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .shell {
-      --gap: 20px;
       width: 560px;
       max-width: none;
       margin: 0 auto;
@@ -583,8 +582,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     .masthead {
       display: table;
       width: 100%;
-      margin: 0 0 var(--gap);
-      padding: 0 0 var(--gap);
+      margin: 0 0 20px;
+      padding: 0 0 20px;
       border-bottom: 3px solid #000;
       table-layout: fixed;
     }
@@ -621,7 +620,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       position: relative;
       border: 3px solid #000;
       border-radius: 24px;
-      margin: 0 0 var(--gap);
+      margin: 0 0 20px;
       padding: 20px;
       background: #fff;
       overflow: visible;
@@ -636,7 +635,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       width: 100%;
       table-layout: fixed;
       border-spacing: 0;
-      margin-bottom: var(--gap);
+      margin-bottom: 20px;
     }
 
     .marketSlot,
@@ -648,12 +647,12 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .marketSlotLeft,
     .bottomSlotLeft {
-      padding-right: calc(var(--gap) / 2);
+      padding-right: 10px;
     }
 
     .marketSlotRight,
     .bottomSlotRight {
-      padding-left: calc(var(--gap) / 2);
+      padding-left: 10px;
     }
 
     .markets .card {
@@ -947,8 +946,8 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .masthead {
-      margin-bottom: var(--gap);
-      padding-bottom: var(--gap);
+      margin-bottom: 20px;
+      padding-bottom: 20px;
     }
 
     .hasEvent .date {
@@ -961,13 +960,13 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .markets {
-      margin-bottom: var(--gap);
+      margin-bottom: 20px;
     }
 
     .hasEvent .card {
       border-width: 3px;
       border-radius: 24px;
-      margin-bottom: var(--gap);
+      margin-bottom: 20px;
       padding: 20px;
     }
 
