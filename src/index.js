@@ -562,7 +562,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     body {
       box-sizing: border-box;
-      padding: 14px;
+      padding: 20px;
     }
 
     .shell {
@@ -946,97 +946,97 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
     }
 
     .hasEvent .masthead {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
     }
 
     .hasEvent .date {
-      font-size: 44px;
+      font-size: 50px;
     }
 
     .hasEvent .refreshPill {
-      font-size: 20px;
-      padding: 4px 9px;
+      font-size: 22px;
+      padding: 5px 10px;
     }
 
     .hasEvent .markets {
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .hasEvent .card {
       border-width: 3px;
-      border-radius: 22px;
-      margin-bottom: 10px;
-      padding: 16px;
+      border-radius: 24px;
+      margin-bottom: 20px;
+      padding: 20px;
     }
 
     .hasEvent .markets .card {
-      min-height: 160px;
+      min-height: 210px;
     }
 
     .hasEvent .cardLabel {
-      font-size: 21px;
-      margin-bottom: 14px;
-      padding: 4px 10px;
+      font-size: 24px;
+      margin-bottom: 20px;
+      padding: 5px 12px;
     }
 
     .hasEvent .markets .cardCompact .primary {
-      font-size: 46px;
+      font-size: 54px;
     }
 
     .hasEvent .markets .cardCompact .secondary {
-      font-size: 24px;
-      margin-top: 12px;
+      font-size: 28px;
+      margin-top: 20px;
     }
 
     .hasEvent .markets .cardCompact .arrow {
-      font-size: 42px;
+      font-size: 50px;
     }
 
     .hasEvent .markets .cardCompact .movePercent {
-      font-size: 21px;
+      font-size: 24px;
     }
 
     .hasEvent .markets .sparkline {
-      height: 34px;
-      margin-top: 10px;
+      height: 44px;
+      margin-top: 16px;
     }
 
     .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) {
-      min-height: 170px;
+      min-height: 214px;
     }
 
     .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) .primary {
-      font-size: 68px;
+      font-size: 76px;
     }
 
     .hasEvent .card .source {
-      top: 18px;
-      right: 18px;
-      font-size: 20px;
-      gap: 4px;
+      top: 20px;
+      right: 20px;
+      font-size: 22px;
+      gap: 6px;
     }
 
     .hasEvent .card .source .humidity {
-      font-size: 17px;
+      font-size: 18px;
     }
 
     .hasEvent .indoorChart {
-      right: 18px;
-      bottom: 42px;
-      width: 42%;
-      height: 42px;
+      right: 20px;
+      bottom: 48px;
+      width: 46%;
+      height: 52px;
     }
 
     .hasEvent .timeAxis {
-      right: 18px;
-      bottom: 16px;
-      width: 42%;
-      font-size: 19px;
+      right: 20px;
+      bottom: 20px;
+      width: 46%;
+      font-size: 22px;
     }
 
     .hasEvent .bottomRow .card {
-      min-height: 296px;
+      min-height: 330px;
     }
 
     .hasEvent .bottomRow .cardLabel {
