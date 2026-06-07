@@ -9,6 +9,8 @@ const DEFAULT_LOCATION = {
 
 const INDOOR_KV_KEY = "home:indoor";
 const INDOOR_HISTORY_LIMIT = 96;
+const BLUE_JAYS_TEAM_ID = 141;
+const ROGERS_CENTRE_TICKETMASTER_VENUE_ID = "131114";
 let indoorSnapshot = null;
 
 export default {
@@ -35,20 +37,23 @@ export default {
     }
 
     const location = getLocation(request, env);
-    const [nvdaResult, btcResult, weatherResult] = await Promise.allSettled([
+    const today = formatDate(new Date(), location.timezone);
+    const [nvdaResult, btcResult, weatherResult, rogersCentreResult] = await Promise.allSettled([
       getNvdaQuote(),
       getBtcUsdtQuote(),
       getWeather(location),
+      getRogersCentreActivity(today, location.timezone, env),
     ]);
 
     const dashboard = {
-      date: formatDate(new Date(), location.timezone),
+      date: today,
       generatedAt: formatTime(new Date(), location.timezone),
       location,
       nvda: valueOrUnavailable(nvdaResult),
       btc: valueOrUnavailable(btcResult),
       indoor: await getIndoorSnapshot(env),
       weather: valueOrUnavailable(weatherResult),
+      rogersCentre: valueOrUnavailable(rogersCentreResult),
     };
 
     return new Response(renderDashboard(dashboard), {
@@ -266,6 +271,66 @@ async function getWeather(location) {
   };
 }
 
+async function getRogersCentreActivity(date, timezone, env) {
+  const [blueJaysResult, ticketmasterResult] = await Promise.allSettled([
+    getBlueJaysHomeGame(date),
+    getTicketmasterRogersCentreEvent(date, timezone, env),
+  ]);
+
+  return valueOrUnavailable(blueJaysResult) || valueOrUnavailable(ticketmasterResult);
+}
+
+async function getBlueJaysHomeGame(date) {
+  const params = new URLSearchParams({
+    sportId: "1",
+    teamId: String(BLUE_JAYS_TEAM_ID),
+    date,
+  });
+  const json = await fetchJson(`https://statsapi.mlb.com/api/v1/schedule?${params}`);
+  const games = json.dates?.flatMap((day) => day.games || []) || [];
+  const game = games.find((item) => item.teams?.home?.team?.id === BLUE_JAYS_TEAM_ID);
+
+  if (!game) {
+    return null;
+  }
+
+  return {
+    title: "Blue Jays Game",
+    subtitle: "",
+    time: formatEventTime(game.gameDate, DEFAULT_LOCATION.timezone),
+    source: "MLB",
+  };
+}
+
+async function getTicketmasterRogersCentreEvent(date, timezone, env) {
+  if (!env.TICKETMASTER_API_KEY) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    venueId: ROGERS_CENTRE_TICKETMASTER_VENUE_ID,
+    startDateTime: zonedTimeToUtcIso(date, "00:00:00", timezone),
+    endDateTime: zonedTimeToUtcIso(date, "23:59:59", timezone),
+    countryCode: "CA",
+    sort: "date,asc",
+    size: "1",
+    apikey: env.TICKETMASTER_API_KEY,
+  });
+  const json = await fetchJson(`https://app.ticketmaster.com/discovery/v2/events.json?${params}`);
+  const event = json._embedded?.events?.[0];
+
+  if (!event) {
+    return null;
+  }
+
+  return {
+    title: event.name || "Event",
+    subtitle: "",
+    time: formatTicketmasterTime(event, timezone),
+    source: "Ticketmaster",
+  };
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, {
     headers: {
@@ -319,6 +384,96 @@ function formatDate(date, timezone) {
     month: "2-digit",
     day: "2-digit",
   });
+}
+
+function formatEventTime(value, timezone) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return formatTime(date, timezone);
+}
+
+function formatTicketmasterTime(event, timezone) {
+  const dateTime = event.dates?.start?.dateTime;
+  if (dateTime) {
+    return formatEventTime(dateTime, timezone);
+  }
+
+  const localTime = event.dates?.start?.localTime;
+  if (!localTime) {
+    return "";
+  }
+
+  return localTime.slice(0, 5);
+}
+
+function formatMlbMatchup(game) {
+  const away = game.teams?.away?.team?.name || "Away";
+  return `vs ${shortTeamName(away)}`;
+}
+
+function shortTeamName(name) {
+  return String(name)
+    .replace(/^Toronto /, "")
+    .replace(/^Baltimore /, "")
+    .replace(/^Boston /, "")
+    .replace(/^New York /, "")
+    .replace(/^Tampa Bay /, "")
+    .replace(/^Los Angeles /, "")
+    .replace(/^San Francisco /, "")
+    .replace(/^Arizona /, "")
+    .replace(/^Philadelphia /, "")
+    .replace(/^Washington /, "")
+    .replace(/^Cleveland /, "")
+    .replace(/^Detroit /, "")
+    .replace(/^Minnesota /, "")
+    .replace(/^Kansas City /, "")
+    .replace(/^Chicago /, "")
+    .replace(/^Milwaukee /, "")
+    .replace(/^Pittsburgh /, "")
+    .replace(/^Cincinnati /, "")
+    .replace(/^St\\. Louis /, "")
+    .replace(/^Houston /, "")
+    .replace(/^Texas /, "")
+    .replace(/^Seattle /, "")
+    .replace(/^Colorado /, "")
+    .replace(/^San Diego /, "")
+    .replace(/^Miami /, "")
+    .replace(/^Atlanta /, "");
+}
+
+function zonedTimeToUtcIso(date, time, timezone) {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute, second] = time.split(":").map(Number);
+  let utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+
+  for (let index = 0; index < 3; index += 1) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).formatToParts(utcDate);
+    const local = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    const localAsUtc = Date.UTC(
+      Number(local.year),
+      Number(local.month) - 1,
+      Number(local.day),
+      Number(local.hour),
+      Number(local.minute),
+      Number(local.second),
+    );
+    const expectedAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+    utcDate = new Date(utcDate.getTime() - (localAsUtc - expectedAsUtc));
+  }
+
+  return utcDate.toISOString().replace(".000Z", "Z");
 }
 
 function formatTime(date, timezone) {
@@ -386,7 +541,7 @@ function weatherCodeToText(code) {
   return weatherCodes[code] || "Weather";
 }
 
-function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weather }) {
+function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weather, rogersCentre }) {
   return `<!doctype html>
 <html>
 <head>
@@ -407,7 +562,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     body {
       box-sizing: border-box;
-      padding: 20px;
+      padding: 14px;
     }
 
     .shell {
@@ -483,23 +638,57 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       margin-bottom: 20px;
     }
 
-    .marketSlot {
+    .marketSlot,
+    .bottomSlot {
       display: table-cell;
       width: 50%;
       vertical-align: top;
     }
 
-    .marketSlotLeft {
+    .marketSlotLeft,
+    .bottomSlotLeft {
       padding-right: 10px;
     }
 
-    .marketSlotRight {
+    .marketSlotRight,
+    .bottomSlotRight {
       padding-left: 10px;
     }
 
     .markets .card {
       margin-bottom: 0;
       min-height: 210px;
+    }
+
+    .bottomRow {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 0;
+    }
+
+    .bottomRow .card {
+      min-height: 258px;
+      margin-bottom: 0;
+    }
+
+    .bottomRow .cardLabel {
+      font-size: 20px;
+      margin-bottom: 18px;
+    }
+
+    .bottomRow .primary {
+      font-size: 58px;
+    }
+
+    .bottomRow .metric {
+      width: 100%;
+      padding-bottom: 12px;
+      font-size: 25px;
+    }
+
+    .bottomRow .metric strong {
+      font-size: 20px;
     }
 
     .cardCompact {
@@ -726,10 +915,171 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       font-size: 18px;
       font-weight: 600;
     }
+
+    .eventTitle {
+      font-size: 34px;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+
+    .eventSubtitle {
+      margin-top: 10px;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+
+    .eventTime {
+      margin-top: 18px;
+      font-size: 36px;
+      line-height: 1;
+      font-weight: 700;
+    }
+
+    .eventWarning {
+      margin-top: 22px;
+      border-top: 2px solid #000;
+      padding-top: 14px;
+      font-size: 24px;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+
+    .hasEvent .masthead {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+    }
+
+    .hasEvent .date {
+      font-size: 44px;
+    }
+
+    .hasEvent .refreshPill {
+      font-size: 20px;
+      padding: 4px 9px;
+    }
+
+    .hasEvent .markets {
+      margin-bottom: 10px;
+    }
+
+    .hasEvent .card {
+      border-width: 3px;
+      border-radius: 22px;
+      margin-bottom: 10px;
+      padding: 16px;
+    }
+
+    .hasEvent .markets .card {
+      min-height: 160px;
+    }
+
+    .hasEvent .cardLabel {
+      font-size: 21px;
+      margin-bottom: 14px;
+      padding: 4px 10px;
+    }
+
+    .hasEvent .markets .cardCompact .primary {
+      font-size: 46px;
+    }
+
+    .hasEvent .markets .cardCompact .secondary {
+      font-size: 24px;
+      margin-top: 12px;
+    }
+
+    .hasEvent .markets .cardCompact .arrow {
+      font-size: 42px;
+    }
+
+    .hasEvent .markets .cardCompact .movePercent {
+      font-size: 21px;
+    }
+
+    .hasEvent .markets .sparkline {
+      height: 34px;
+      margin-top: 10px;
+    }
+
+    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) {
+      min-height: 170px;
+    }
+
+    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) .primary {
+      font-size: 68px;
+    }
+
+    .hasEvent .card .source {
+      top: 18px;
+      right: 18px;
+      font-size: 20px;
+      gap: 4px;
+    }
+
+    .hasEvent .card .source .humidity {
+      font-size: 17px;
+    }
+
+    .hasEvent .indoorChart {
+      right: 18px;
+      bottom: 42px;
+      width: 42%;
+      height: 42px;
+    }
+
+    .hasEvent .timeAxis {
+      right: 18px;
+      bottom: 16px;
+      width: 42%;
+      font-size: 19px;
+    }
+
+    .hasEvent .bottomRow .card {
+      min-height: 286px;
+    }
+
+    .hasEvent .bottomRow .cardLabel {
+      font-size: 19px;
+      margin-bottom: 12px;
+    }
+
+    .hasEvent .bottomRow .primary {
+      font-size: 48px;
+    }
+
+    .hasEvent .bottomRow .metric {
+      padding-bottom: 10px;
+      font-size: 23px;
+    }
+
+    .hasEvent .bottomRow .metric strong {
+      font-size: 19px;
+    }
+
+    .hasEvent .eventTitle {
+      font-size: 29px;
+    }
+
+    .hasEvent .eventSubtitle {
+      margin-top: 8px;
+      font-size: 24px;
+    }
+
+    .hasEvent .eventTime {
+      margin-top: 20px;
+      font-size: 29px;
+    }
+
+    .hasEvent .eventWarning {
+      margin-top: 26px;
+      padding-top: 12px;
+      font-size: 22px;
+    }
   </style>
 </head>
 <body>
-  <main class="shell">
+  <main class="shell ${rogersCentre ? "hasEvent" : ""}">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
       <div class="refreshNote"><span class="refreshPill">30s &middot; ${escapeHtml(generatedAt)}</span></div>
@@ -741,7 +1091,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
         <div class="marketSlot marketSlotRight">${renderMarketCard("BTCUSDT", btc, "cardCompact")}</div>
       </section>
       ${renderIndoorCard(indoor)}
-      ${renderWeatherCard(weather)}
+      ${renderBottomCards(weather, rogersCentre)}
     </section>
 
   </main>
@@ -887,10 +1237,26 @@ function renderIndoorCard(indoor) {
     </section>`;
 }
 
-function renderWeatherCard(weather) {
+function renderBottomCards(weather, rogersCentre) {
+  if (!rogersCentre) {
+    return renderWeatherCard(weather);
+  }
+
+  return `<section class="bottomRow">
+      <div class="bottomSlot bottomSlotLeft">${renderWeatherCard(weather, true)}</div>
+      <div class="bottomSlot bottomSlotRight">${renderRogersCentreCard(rogersCentre)}</div>
+    </section>`;
+}
+
+function renderWeatherCard(weather, compact = false) {
   if (!weather) {
     return renderUnavailableCard("Weather");
   }
+
+  const extraMetrics = compact
+    ? ""
+    : `<div class="metric"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
+        <div class="metric"><strong>Wind</strong>${Number.isFinite(weather.wind) ? `${Math.round(weather.wind)} km/h` : "--"}</div>`;
 
   return `<section class="card cardWeather">
       <div class="cardLabel">Weather</div>
@@ -898,9 +1264,21 @@ function renderWeatherCard(weather) {
       <div class="metrics">
         <div class="metric"><strong>High/Low</strong>${formatTemp(weather.high)} / ${formatTemp(weather.low)}</div>
         <div class="metric"><strong>Rain</strong>${Number.isFinite(weather.rainChance) ? `${weather.rainChance}%` : "--"}</div>
-        <div class="metric"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
-        <div class="metric"><strong>Wind</strong>${Number.isFinite(weather.wind) ? `${Math.round(weather.wind)} km/h` : "--"}</div>
+        ${extraMetrics}
       </div>
+    </section>`;
+}
+
+function renderRogersCentreCard(event) {
+  const time = event.time ? `${escapeHtml(event.time)} · ` : "";
+  const subtitle = event.subtitle ? `<div class="eventSubtitle">${escapeHtml(event.subtitle)}</div>` : "";
+
+  return `<section class="card cardEvent">
+      <div class="cardLabel">Rogers Centre</div>
+      <div class="eventTitle">${escapeHtml(event.title)}</div>
+      ${subtitle}
+      <div class="eventTime">${time}Today</div>
+      <div class="eventWarning">Traffic likely</div>
     </section>`;
 }
 
