@@ -1,4 +1,4 @@
-const REFRESH_SECONDS = 30;
+const REFRESH_SECONDS = 60;
 
 const DEFAULT_LOCATION = {
   city: "Toronto",
@@ -1087,7 +1087,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   <main class="shell ${rogersCentre ? "hasEvent" : ""}">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote"><span class="refreshPill">30s &middot; ${escapeHtml(generatedAt)}</span></div>
+      <div class="refreshNote"><span class="refreshPill">1m &middot; ${escapeHtml(generatedAt)}</span></div>
     </section>
 
     <section class="board">
