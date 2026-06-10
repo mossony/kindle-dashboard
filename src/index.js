@@ -221,6 +221,33 @@ async function getBtcUsdtQuote() {
       history: compactSeries(klines.map((item) => Number(item[4]))),
     };
   } catch (error) {
+    return getYahooBtcUsdQuote();
+  }
+}
+
+async function getYahooBtcUsdQuote() {
+  try {
+    const json = await fetchJson(
+      "https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?interval=30m&range=1d",
+    );
+    const result = json.chart?.result?.[0];
+    const meta = result?.meta;
+    const prices = result?.indicators?.quote?.[0]?.close || [];
+    const price = Number(meta?.regularMarketPrice);
+    const previousClose = Number(meta?.chartPreviousClose ?? meta?.previousClose);
+
+    if (!Number.isFinite(price)) {
+      throw new Error("Yahoo BTC quote unavailable");
+    }
+
+    return {
+      symbol: "BTCUSDT",
+      price,
+      currency: "USDT",
+      changePercent: getPercentChange(price, previousClose),
+      history: compactSeries(prices),
+    };
+  } catch (error) {
     const json = await fetchJson("https://api.coinbase.com/v2/prices/BTC-USD/spot");
     return {
       symbol: "BTCUSDT",
