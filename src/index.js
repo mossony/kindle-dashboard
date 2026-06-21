@@ -1189,7 +1189,13 @@ function seriesToPoints(values, width, height, padding) {
 }
 
 function renderIndoorTrend(indoor) {
-  const history = normalizeIndoorHistory(indoor);
+  let history = normalizeIndoorHistory(indoor);
+  if (history.length < 2) {
+    return "";
+  }
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  history = history.filter((point) => new Date(point.updatedAt) >= sevenDaysAgo);
   if (history.length < 2) {
     return "";
   }
@@ -1198,7 +1204,7 @@ function renderIndoorTrend(indoor) {
   const humidityValues = history
     .map((point) => point.humidity)
     .filter((value) => Number.isFinite(value));
-  const start = formatAxisTime(history[Math.max(0, history.length - 7)]?.updatedAt);
+  const start = formatAxisTime(history[0]?.updatedAt);
   const end = formatAxisTime(history[history.length - 1]?.updatedAt);
 
   return `${renderSparkline(values, humidityValues).replace('class="sparkline"', 'class="sparkline indoorChart"')}
