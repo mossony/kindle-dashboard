@@ -1198,7 +1198,7 @@ function renderIndoorTrend(indoor) {
   const humidityValues = history
     .map((point) => point.humidity)
     .filter((value) => Number.isFinite(value));
-  const start = formatAxisTime(history[0]?.updatedAt);
+  const start = formatAxisTime(history[Math.max(0, history.length - 7)]?.updatedAt);
   const end = formatAxisTime(history[history.length - 1]?.updatedAt);
 
   return `${renderSparkline(values, humidityValues).replace('class="sparkline"', 'class="sparkline indoorChart"')}
