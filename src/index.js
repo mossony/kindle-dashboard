@@ -11,60 +11,64 @@ const INDOOR_KV_KEY = "home:indoor";
 const INDOOR_HISTORY_LIMIT = 96;
 const BLUE_JAYS_TEAM_ID = 141;
 const ROGERS_CENTRE_TICKETMASTER_VENUE_ID = "131114";
+const FETCH_TIMEOUT_MS = 4500;
 let indoorSnapshot = null;
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const key = url.searchParams.get("key");
-
-    if (!env.DASHBOARD_SECRET || key !== env.DASHBOARD_SECRET) {
-      return new Response("Unauthorized", {
-        status: 401,
-        headers: {
-          "content-type": "text/plain; charset=utf-8",
-          "x-robots-tag": "noindex, nofollow",
-        },
-      });
+    try {
+      return await handleRequest(request, env);
+    } catch (error) {
+      return handleUnexpectedError(request, env, error);
     }
+  },
+};
 
-    if (url.pathname === "/api/home") {
-      return handleHomeApi(request, env);
-    }
+async function handleRequest(request, env) {
+  const url = new URL(request.url);
+  const key = url.searchParams.get("key");
 
-    if (url.pathname !== "/" && url.pathname !== "/kindle") {
-      return new Response("Not Found", { status: 404 });
-    }
-
-    const location = getLocation(request, env);
-    const today = formatDate(new Date(), location.timezone);
-    const [nvdaResult, btcResult, weatherResult, rogersCentreResult] = await Promise.allSettled([
-      getNvdaQuote(),
-      getBtcUsdtQuote(),
-      getWeather(location),
-      getRogersCentreActivity(today, location.timezone, env),
-    ]);
-
-    const dashboard = {
-      date: today,
-      generatedAt: formatTime(new Date(), location.timezone),
-      location,
-      nvda: valueOrUnavailable(nvdaResult),
-      btc: valueOrUnavailable(btcResult),
-      indoor: await getIndoorSnapshot(env),
-      weather: valueOrUnavailable(weatherResult),
-      rogersCentre: valueOrUnavailable(rogersCentreResult),
-    };
-
-    return new Response(renderDashboard(dashboard), {
+  if (!env.DASHBOARD_SECRET || key !== env.DASHBOARD_SECRET) {
+    return new Response("Unauthorized", {
+      status: 401,
       headers: {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "no-store",
+        "content-type": "text/plain; charset=utf-8",
         "x-robots-tag": "noindex, nofollow",
       },
     });
-  },
-};
+  }
+
+  if (url.pathname === "/api/home") {
+    return handleHomeApi(request, env);
+  }
+
+  if (url.pathname !== "/" && url.pathname !== "/kindle") {
+    return new Response("Not Found", { status: 404 });
+  }
+
+  const location = getLocation(request, env);
+  const today = formatDate(new Date(), location.timezone);
+  const [nvdaResult, btcResult, weatherResult, rogersCentreResult, indoorResult] = await Promise.allSettled([
+    getNvdaQuote(),
+    getBtcUsdtQuote(),
+    getWeather(location),
+    getRogersCentreActivity(today, location.timezone, env),
+    getIndoorSnapshot(env),
+  ]);
+
+  const dashboard = {
+    date: today,
+    generatedAt: formatTime(new Date(), location.timezone),
+    location,
+    nvda: valueOrUnavailable(nvdaResult),
+    btc: valueOrUnavailable(btcResult),
+    indoor: valueOrUnavailable(indoorResult),
+    weather: valueOrUnavailable(weatherResult),
+    rogersCentre: valueOrUnavailable(rogersCentreResult),
+  };
+
+  return htmlResponse(renderDashboard(dashboard));
+}
 
 async function handleHomeApi(request, env) {
   if (request.method === "GET") {
@@ -161,6 +165,38 @@ function jsonResponse(body, status = 200) {
       "x-robots-tag": "noindex, nofollow",
     },
   });
+}
+
+function htmlResponse(html, status = 200) {
+  return new Response(html, {
+    status,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "x-robots-tag": "noindex, nofollow",
+    },
+  });
+}
+
+function handleUnexpectedError(request, env, error) {
+  const url = new URL(request.url);
+  if (url.pathname === "/api/home") {
+    return jsonResponse({ ok: false, error: "Temporary unavailable" }, 503);
+  }
+
+  const timezone = env.DEFAULT_TIMEZONE || DEFAULT_LOCATION.timezone;
+  let date = "";
+  let generatedAt = "";
+  try {
+    date = formatDate(new Date(), timezone);
+    generatedAt = formatTime(new Date(), timezone);
+  } catch (formatError) {
+    date = new Date().toISOString().slice(0, 10);
+    generatedAt = "--:--";
+  }
+
+  console.error("Dashboard render failed", error);
+  return htmlResponse(renderRecoveryPage({ date, generatedAt }), 200);
 }
 
 function getLocation(request, env) {
@@ -358,19 +394,27 @@ async function getTicketmasterRogersCentreEvent(date, timezone, env) {
   };
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, {
-    headers: {
-      "accept": "application/json",
-      "user-agent": "kindle-dashboard-worker/1.0",
-    },
-  });
+async function fetchJson(url, timeoutMs = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "accept": "application/json",
+        "user-agent": "kindle-dashboard-worker/1.0",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 function valueOrUnavailable(result) {
@@ -1126,6 +1170,88 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       ${renderBottomCards(weather, rogersCentre)}
     </section>
 
+  </main>
+</body>
+</html>`;
+}
+
+function renderRecoveryPage({ date, generatedAt }) {
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=600, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="refresh" content="${REFRESH_SECONDS}">
+  <title>Kindle Dashboard Recovery</title>
+  <style>
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #000;
+      font-family: Verdana, "Trebuchet MS", sans-serif;
+    }
+
+    body {
+      box-sizing: border-box;
+      padding: 20px;
+    }
+
+    .shell {
+      width: 560px;
+      margin: 0 auto;
+    }
+
+    .date {
+      font-size: 50px;
+      line-height: 1;
+      font-weight: 700;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #000;
+    }
+
+    .card {
+      margin-top: 20px;
+      border: 3px solid #000;
+      border-radius: 24px;
+      padding: 24px;
+    }
+
+    .label {
+      display: inline-block;
+      border: 2px solid #000;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .message {
+      margin-top: 28px;
+      font-size: 42px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+
+    .small {
+      margin-top: 26px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="date">${escapeHtml(date)} <span style="float:right;font-size:22px;border:2px solid #000;border-radius:999px;padding:5px 10px;">1m &middot; ${escapeHtml(generatedAt)}</span></div>
+    <section class="card">
+      <div class="label">Dashboard</div>
+      <div class="message">Temporary unavailable</div>
+      <div class="small">Auto retry in 1 minute</div>
+    </section>
   </main>
 </body>
 </html>`;
