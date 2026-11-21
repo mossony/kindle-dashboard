@@ -1,3 +1,5 @@
+import { getTeslaBattery, syncTeslaBattery, TESLA_PUBLIC_KEY } from "./tesla.js";
+
 const REFRESH_SECONDS = 60;
 
 const DEFAULT_LOCATION = {
@@ -15,6 +17,10 @@ const FETCH_TIMEOUT_MS = 4500;
 let indoorSnapshot = null;
 
 export default {
+  async scheduled(_event, env) {
+    await syncTeslaBattery(env);
+  },
+
   async fetch(request, env, ctx) {
     try {
       return await handleRequest(request, env);
@@ -26,6 +32,13 @@ export default {
 
 async function handleRequest(request, env) {
   const url = new URL(request.url);
+  if (url.pathname === "/.well-known/appspecific/com.tesla.3p.public-key.pem") {
+    const publicKey = env.TESLA_PUBLIC_KEY?.trim() || TESLA_PUBLIC_KEY;
+    if (!publicKey || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END PUBLIC KEY-----$/.test(publicKey)) {
+      return new Response("Not Found", { status: 404 });
+    }
+    return new Response(`${publicKey}\n`, { headers: { "content-type": "application/x-pem-file" } });
+  }
   const key = url.searchParams.get("key");
 
   if (!env.DASHBOARD_SECRET || key !== env.DASHBOARD_SECRET) {
@@ -48,12 +61,13 @@ async function handleRequest(request, env) {
 
   const location = getLocation(request, env);
   const today = formatDate(new Date(), location.timezone);
-  const [nvdaResult, btcResult, weatherResult, rogersCentreResult, indoorResult] = await Promise.allSettled([
+  const [nvdaResult, btcResult, weatherResult, rogersCentreResult, indoorResult, teslaResult] = await Promise.allSettled([
     getNvdaQuote(),
     getBtcUsdtQuote(),
     getWeather(location),
     getRogersCentreActivity(today, location.timezone, env),
     getIndoorSnapshot(env),
+    getTeslaBattery(env),
   ]);
 
   const dashboard = {
@@ -65,6 +79,7 @@ async function handleRequest(request, env) {
     indoor: valueOrUnavailable(indoorResult),
     weather: valueOrUnavailable(weatherResult),
     rogersCentre: valueOrUnavailable(rogersCentreResult),
+    tesla: valueOrUnavailable(teslaResult),
   };
 
   return htmlResponse(renderDashboard(dashboard));
@@ -612,7 +627,7 @@ function weatherCodeToText(code) {
   return weatherCodes[code] || "Weather";
 }
 
-function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weather, rogersCentre }) {
+function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weather, rogersCentre, tesla }) {
   return `<!doctype html>
 <html>
 <head>
@@ -684,6 +699,18 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       line-height: 1;
       font-weight: 700;
       white-space: nowrap;
+    }
+
+    .teslaCard {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 3px 8px;
+      border: 2px solid #000;
+      border-radius: 8px;
+      text-align: left;
+      white-space: nowrap;
+      font-size: 18px;
+      line-height: 1.15;
     }
 
     .card {
@@ -1158,7 +1185,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   <main class="shell ${rogersCentre ? "hasEvent" : ""}">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote"><span class="refreshPill">1m &middot; ${escapeHtml(generatedAt)}</span></div>
+      <div class="refreshNote"><span class="refreshPill">1m &middot; ${escapeHtml(generatedAt)}</span>${renderTeslaCard(tesla, location.timezone)}</div>
     </section>
 
     <section class="board">
@@ -1173,6 +1200,19 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
   </main>
 </body>
 </html>`;
+}
+
+function renderTeslaCard(tesla, timezone) {
+  if (!tesla) return "";
+
+  const observedAt = new Date(tesla.timestamp);
+  const label = tesla.chargingState === "Charging" ? " &middot; Charging" : "";
+  const observedDate = formatDate(observedAt, timezone);
+  const observedTime = formatTime(observedAt, timezone);
+  const when = observedDate === formatDate(new Date(), timezone)
+    ? observedTime
+    : `${observedDate.slice(5)} ${observedTime}`;
+  return `<br><div class="teslaCard"><strong>Tesla ${Math.round(tesla.level)}%</strong>${label}<br>Reported ${escapeHtml(when)}</div>`;
 }
 
 function renderRecoveryPage({ date, generatedAt }) {
