@@ -66,7 +66,7 @@ export async function syncTeslaBattery(env) {
 async function fetchTeslaJson(url, operation, options) {
   let response;
   try {
-    response = await fetch(url, { ...options, redirect: "error", signal: AbortSignal.timeout(TIMEOUT_MS) });
+    response = await fetch(url, { ...options, redirect: "manual", signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     throw new Error(`Tesla ${operation} request failed`);
   }
