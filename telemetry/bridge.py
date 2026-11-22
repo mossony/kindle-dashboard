@@ -11,6 +11,7 @@ import redis
 
 WORKER_URL = "https://tesla.mossony.online/api/tesla/telemetry"
 BATTERY_WRITE_INTERVAL_SECONDS = 300
+KM_PER_MILE = 1.609344
 CHARGE_STATES = {"Starting", "Charging", "Complete", "Stopped", "Disconnected", "NoPower"}
 
 
@@ -21,22 +22,24 @@ class NoRedirect(HTTPRedirectHandler):
 
 class BatteryBuffer:
     def __init__(self):
-        self.pending = None
-        self.latest_timestamp = -1
+        self.pending = {}
+        self.latest_timestamps = {}
         self.next_send = 0
 
     def add(self, sample):
-        if "level" in sample and sample["timestamp"] > self.latest_timestamp:
-            self.latest_timestamp = sample["timestamp"]
-            self.pending = {key: sample[key] for key in ("vin", "timestamp", "level")}
+        timestamp = sample["timestamp"]
+        for field, time_key in (("level", "timestamp"), ("rangeKm", "rangeTimestamp")):
+            if field in sample and timestamp > self.latest_timestamps.get(field, -1):
+                self.latest_timestamps[field] = timestamp
+                self.pending.update({"vin": sample["vin"], field: sample[field], time_key: timestamp})
 
     def flush(self, now, send):
-        if self.pending is None or now < self.next_send:
+        if not self.pending or now < self.next_send:
             return
         # Rate-limit attempts as well so a KV quota error cannot cause a retry loop.
         self.next_send = now + BATTERY_WRITE_INTERVAL_SECONDS
         if send(self.pending):
-            self.pending = None
+            self.pending = {}
 
 
 def extract_sample(payload, vin):
@@ -50,17 +53,21 @@ def extract_sample(payload, vin):
         value = datum.get("value") or {}
         if value.get("invalid"):
             continue
-        if datum.get("key") == "BatteryLevel":
+        signal = datum.get("key")
+        if signal in ("BatteryLevel", "RatedRange"):
             for field in ("doubleValue", "floatValue", "intValue", "longValue", "stringValue"):
                 if field in value:
                     try:
-                        level = float(value[field])
+                        number = float(value[field])
                     except (ValueError, TypeError):
                         break
-                    if math.isfinite(level) and 0 <= level <= 100:
-                        sample["level"] = level
+                    if math.isfinite(number) and number >= 0:
+                        if signal == "BatteryLevel" and number <= 100:
+                            sample["level"] = number
+                        elif signal == "RatedRange":
+                            sample["rangeKm"] = number * KM_PER_MILE
                     break
-        if datum.get("key") == "DetailedChargeState":
+        if signal == "DetailedChargeState":
             state = value.get("detailedChargeStateValue") or value.get("stringValue")
             if isinstance(state, str):
                 state = state.removeprefix("DetailedChargeState")

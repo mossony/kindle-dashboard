@@ -21,12 +21,18 @@ export async function getTeslaBattery({ DASHBOARD_KV: kv, TESLA_VIN: vin, TESLA_
     kv.get(LIVE_LEVEL_PREFIX + vin, { type: "json" }),
     kv.get(LIVE_STATE_PREFIX + vin, { type: "json" }),
   ]);
-  const level = liveLevel && (!fallback || liveLevel.timestamp >= fallback.timestamp) ? liveLevel : fallback;
+  const level = Number.isFinite(liveLevel?.level) && (!fallback || liveLevel.timestamp >= fallback.timestamp)
+    ? liveLevel
+    : fallback;
   if (!level) return null;
   const chargingState = liveState && (!fallback || liveState.timestamp >= fallback.timestamp)
     ? liveState.chargingState
     : fallback?.chargingState;
-  return { level: level.level, timestamp: level.timestamp, chargingState };
+  return { level: level.level, timestamp: level.timestamp, rangeKm: liveLevel?.rangeKm, chargingState };
+}
+
+function validTelemetryTime(value) {
+  return Number.isSafeInteger(value) && value > 0 && value <= Date.now() + 60_000;
 }
 
 export async function receiveTeslaTelemetry(request, { DASHBOARD_KV: kv, TESLA_VIN: vin, TESLA_TELEMETRY_TOKEN: token }) {
@@ -45,21 +51,30 @@ export async function receiveTeslaTelemetry(request, { DASHBOARD_KV: kv, TESLA_V
     return new Response(null, { status: 400 });
   }
   const timestamp = sample?.timestamp;
-  if (sample?.vin !== vin || !Number.isSafeInteger(timestamp) || timestamp <= 0 || timestamp > Date.now() + 60_000) {
+  if (sample?.vin !== vin) {
     return new Response(null, { status: 400 });
   }
-  const entries = [];
-  if (Number.isFinite(sample.level) && sample.level >= 0 && sample.level <= 100) {
-    entries.push([LIVE_LEVEL_PREFIX + vin, { level: sample.level, timestamp }]);
+  const { level, rangeKm, rangeTimestamp, chargingState } = sample;
+  const hasLevel = validTelemetryTime(timestamp) && Number.isFinite(level) && level >= 0 && level <= 100;
+  const hasRange = validTelemetryTime(rangeTimestamp) && Number.isFinite(rangeKm) && rangeKm >= 0 && rangeKm <= 2000;
+  const hasState = validTelemetryTime(timestamp) && typeof chargingState === "string" &&
+    /^(Starting|Charging|Complete|Stopped|Disconnected|NoPower)$/.test(chargingState);
+  if (!hasLevel && !hasRange && !hasState) return new Response(null, { status: 400 });
+
+  if (hasLevel || hasRange) {
+    const key = LIVE_LEVEL_PREFIX + vin;
+    const snapshot = await kv.get(key, { type: "json" }) || {};
+    const levelChanged = hasLevel && timestamp > (snapshot.timestamp ?? 0);
+    const rangeChanged = hasRange && rangeTimestamp > (snapshot.rangeTimestamp ?? 0);
+    if (levelChanged) Object.assign(snapshot, { level, timestamp });
+    if (rangeChanged) Object.assign(snapshot, { rangeKm, rangeTimestamp });
+    if (levelChanged || rangeChanged) await kv.put(key, JSON.stringify(snapshot));
   }
-  if (typeof sample.chargingState === "string" && /^(Starting|Charging|Complete|Stopped|Disconnected|NoPower)$/.test(sample.chargingState)) {
-    entries.push([LIVE_STATE_PREFIX + vin, { chargingState: sample.chargingState, timestamp }]);
-  }
-  if (!entries.length) return new Response(null, { status: 400 });
-  await Promise.all(entries.map(async ([key, value]) => {
+  if (hasState) {
+    const key = LIVE_STATE_PREFIX + vin;
     const previous = await kv.get(key, { type: "json" });
-    if (!previous || timestamp > previous.timestamp) await kv.put(key, JSON.stringify(value));
-  }));
+    if (!previous || timestamp > previous.timestamp) await kv.put(key, JSON.stringify({ chargingState, timestamp }));
+  }
   return new Response(null, { status: 204 });
 }
 

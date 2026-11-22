@@ -780,16 +780,32 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .teslaRing {
       display: block;
-      width: 148px;
-      height: 148px;
+      width: 136px;
+      height: 136px;
       margin: 0 auto;
     }
 
     .teslaDetails {
       margin-top: 8px;
       text-align: center;
-      font-size: 19px;
+      font-size: 17px;
       line-height: 1.2;
+    }
+
+    .bottomRow .cardTesla {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    .bottomRow .cardTesla .cardLabel {
+      margin-bottom: 6px;
+    }
+
+    .teslaRange {
+      margin-bottom: 2px;
+      font-size: 26px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .cardCompact {
@@ -1213,6 +1229,10 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       padding-left: 8px;
     }
 
+    .bottomStack .teslaRange {
+      font-size: 22px;
+    }
+
     .hasEvent .bottomStack .cardLabel {
       font-size: 15px;
       margin-bottom: 6px;
@@ -1265,6 +1285,9 @@ function renderTeslaCard(tesla, timezone) {
   const filled = (level / 100) * circumference;
   const observedAt = new Date(tesla.timestamp);
   const charging = tesla.chargingState === "Charging" ? "<br>Charging" : "";
+  const range = Number.isFinite(tesla.rangeKm)
+    ? `<div class="teslaRange">${Math.round(tesla.rangeKm)} km</div>`
+    : "";
   const observedDate = formatDate(observedAt, timezone);
   const observedTime = formatTime(observedAt, timezone);
   const when = observedDate === formatDate(new Date(), timezone)
@@ -1279,7 +1302,7 @@ function renderTeslaCard(tesla, timezone) {
           ${arc}
           <text x="72" y="85" text-anchor="middle" fill="#000" font-size="37" font-weight="bold">${level}%</text>
         </svg></div>
-        <div class="teslaDetails">Reported ${escapeHtml(when)}${charging}</div>
+        <div class="teslaDetails">${range}Reported ${escapeHtml(when)}${charging}</div>
       </div>
     </section>`;
 }
