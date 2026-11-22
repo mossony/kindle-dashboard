@@ -1,6 +1,8 @@
 const FLEET_API = "https://fleet-api.prd.na.vn.cloud.tesla.com";
 const TOKEN_URL = "https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token";
 const BATTERY_KEY_PREFIX = "tesla:battery:";
+const LIVE_LEVEL_PREFIX = "tesla:live:level:";
+const LIVE_STATE_PREFIX = "tesla:live:state:";
 const TOKENS_KEY = "tesla:tokens";
 const TIMEOUT_MS = 8000;
 
@@ -9,10 +11,56 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpkyRawNAuZQ5I4K9Nlj5ncW6eHU5
 2AGYhPy0ffYpZGFCPRDiGx22c2g71NnKSCBUVCDymhjbCz4BHwWHf1NXsQ==
 -----END PUBLIC KEY-----`;
 
-export function getTeslaBattery(env) {
-  return env.TESLA_VIN && env.DASHBOARD_KV
-    ? env.DASHBOARD_KV.get(BATTERY_KEY_PREFIX + env.TESLA_VIN, { type: "json" })
-    : null;
+export async function getTeslaBattery({ DASHBOARD_KV: kv, TESLA_VIN: vin, TESLA_TELEMETRY_TOKEN: token }) {
+  if (!vin || !kv) return null;
+  const cached = kv.get(BATTERY_KEY_PREFIX + vin, { type: "json" });
+  if (!token) return cached;
+
+  const [fallback, liveLevel, liveState] = await Promise.all([
+    cached,
+    kv.get(LIVE_LEVEL_PREFIX + vin, { type: "json" }),
+    kv.get(LIVE_STATE_PREFIX + vin, { type: "json" }),
+  ]);
+  const level = liveLevel && (!fallback || liveLevel.timestamp >= fallback.timestamp) ? liveLevel : fallback;
+  if (!level) return null;
+  const chargingState = liveState && (!fallback || liveState.timestamp >= fallback.timestamp)
+    ? liveState.chargingState
+    : fallback?.chargingState;
+  return { level: level.level, timestamp: level.timestamp, chargingState };
+}
+
+export async function receiveTeslaTelemetry(request, { DASHBOARD_KV: kv, TESLA_VIN: vin, TESLA_TELEMETRY_TOKEN: token }) {
+  if (!token || !vin || !kv || request.method !== "POST") return new Response(null, { status: 404 });
+  const encode = new TextEncoder();
+  const actual = encode.encode(request.headers.get("authorization") || "");
+  const expected = encode.encode(`Bearer ${token}`);
+  if (actual.length !== expected.length || !crypto.subtle.timingSafeEqual(actual, expected)) {
+    return new Response(null, { status: 404 });
+  }
+
+  let sample;
+  try {
+    sample = await request.json();
+  } catch {
+    return new Response(null, { status: 400 });
+  }
+  const timestamp = sample?.timestamp;
+  if (sample?.vin !== vin || !Number.isSafeInteger(timestamp) || timestamp <= 0 || timestamp > Date.now() + 60_000) {
+    return new Response(null, { status: 400 });
+  }
+  const entries = [];
+  if (Number.isFinite(sample.level) && sample.level >= 0 && sample.level <= 100) {
+    entries.push([LIVE_LEVEL_PREFIX + vin, { level: sample.level, timestamp }]);
+  }
+  if (typeof sample.chargingState === "string" && /^(Starting|Charging|Complete|Stopped|Disconnected|NoPower)$/.test(sample.chargingState)) {
+    entries.push([LIVE_STATE_PREFIX + vin, { chargingState: sample.chargingState, timestamp }]);
+  }
+  if (!entries.length) return new Response(null, { status: 400 });
+  await Promise.all(entries.map(async ([key, value]) => {
+    const previous = await kv.get(key, { type: "json" });
+    if (!previous || timestamp > previous.timestamp) await kv.put(key, JSON.stringify(value));
+  }));
+  return new Response(null, { status: 204 });
 }
 
 export async function syncTeslaBattery(env) {
@@ -57,7 +105,7 @@ export async function syncTeslaBattery(env) {
     throw new Error("Tesla cached charge data incomplete");
   }
 
-  const previous = await getTeslaBattery(env);
+  const previous = await kv.get(BATTERY_KEY_PREFIX + vin, { type: "json" });
   if (previous?.timestamp >= timestamp) return;
   const chargingState = typeof charge.charging_state === "string" ? charge.charging_state : null;
   await kv.put(BATTERY_KEY_PREFIX + vin, JSON.stringify({ level, timestamp, chargingState }));

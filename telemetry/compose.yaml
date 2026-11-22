@@ -1,0 +1,69 @@
+x-isolation: &isolation
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  read_only: true
+  pids_limit: 64
+  logging:
+    options:
+      max-size: 5m
+      max-file: "2"
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    <<: *isolation
+    user: redis
+    mem_limit: 96m
+    tmpfs: [/data]
+    command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 32mb, --maxclients, "32"]
+    networks: [telemetry]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
+  receiver:
+    image: tesla/fleet-telemetry:v0.9.5
+    <<: *isolation
+    mem_limit: 192m
+    networks: [telemetry]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./receiver.json:/etc/fleet-telemetry/config.json:ro
+      - ${TESLA_CERT_DIR:-./certs}:/etc/fleet-telemetry/certs:ro
+
+  ingress:
+    image: haproxy:3.2.27-alpine
+    <<: *isolation
+    user: "65532"
+    mem_limit: 64m
+    networks: [default, telemetry]
+    restart: unless-stopped
+    depends_on: [receiver]
+    ports:
+      - "${TESLA_LISTEN_ADDRESS:-127.0.0.1}:${TESLA_RECEIVER_PORT:-4443}:4443"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+  bridge:
+    build: .
+    <<: *isolation
+    mem_limit: 64m
+    networks: [default, telemetry]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      TESLA_VIN: ${TESLA_VIN:?Set TESLA_VIN}
+      TESLA_TELEMETRY_TOKEN: ${TESLA_TELEMETRY_TOKEN:?Set TESLA_TELEMETRY_TOKEN}
+
+networks:
+  telemetry:
+    internal: true

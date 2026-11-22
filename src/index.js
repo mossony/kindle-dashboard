@@ -1,4 +1,4 @@
-import { getTeslaBattery, syncTeslaBattery, TESLA_PUBLIC_KEY } from "./tesla.js";
+import { getTeslaBattery, receiveTeslaTelemetry, syncTeslaBattery, TESLA_PUBLIC_KEY } from "./tesla.js";
 
 const REFRESH_SECONDS = 60;
 
@@ -32,6 +32,7 @@ export default {
 
 async function handleRequest(request, env) {
   const url = new URL(request.url);
+  if (url.pathname === "/api/tesla/telemetry") return receiveTeslaTelemetry(request, env);
   if (url.pathname === "/.well-known/appspecific/com.tesla.3p.public-key.pem") {
     const publicKey = env.TESLA_PUBLIC_KEY?.trim() || TESLA_PUBLIC_KEY;
     if (!publicKey || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END PUBLIC KEY-----$/.test(publicKey)) {

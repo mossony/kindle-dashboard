@@ -3,3 +3,5 @@ node_modules/
 .wrangler/
 wrangler-dev.log
 wrangler-dev-8787.log
+telemetry/.env
+telemetry/certs/
