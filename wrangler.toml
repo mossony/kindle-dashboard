@@ -7,6 +7,10 @@ workers_dev = true
 pattern = "tesla.mossony.online"
 custom_domain = true
 
+[[routes]]
+pattern = "kindle.mossony.online"
+custom_domain = true
+
 [triggers]
 crons = ["*/15 * * * *"]
 
