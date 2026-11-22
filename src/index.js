@@ -1,4 +1,5 @@
 import { getTeslaBattery, receiveTeslaTelemetry, syncTeslaBattery, TESLA_PUBLIC_KEY } from "./tesla.js";
+import { dashboardLoginPage, hasDashboardSession, loginDashboard, matchesSecret } from "./dashboard-auth.js";
 
 const REFRESH_SECONDS = 60;
 
@@ -33,6 +34,7 @@ export default {
 async function handleRequest(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/api/tesla/telemetry") return receiveTeslaTelemetry(request, env);
+  if (url.pathname === "/login") return loginDashboard(request, env.DASHBOARD_LOGIN_SECRET);
   if (url.pathname === "/.well-known/appspecific/com.tesla.3p.public-key.pem") {
     const publicKey = env.TESLA_PUBLIC_KEY?.trim() || TESLA_PUBLIC_KEY;
     if (!publicKey || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END PUBLIC KEY-----$/.test(publicKey)) {
@@ -40,24 +42,24 @@ async function handleRequest(request, env) {
     }
     return new Response(`${publicKey}\n`, { headers: { "content-type": "application/x-pem-file" } });
   }
-  const key = url.searchParams.get("key");
-
-  if (!env.DASHBOARD_SECRET || key !== env.DASHBOARD_SECRET) {
-    return new Response("Unauthorized", {
-      status: 401,
-      headers: {
-        "content-type": "text/plain; charset=utf-8",
-        "x-robots-tag": "noindex, nofollow",
-      },
-    });
-  }
-
   if (url.pathname === "/api/home") {
+    const authorized = env.HOME_API_SECRET
+      ? matchesSecret(request.headers.get("authorization"), `Bearer ${env.HOME_API_SECRET}`)
+      : matchesSecret(url.searchParams.get("key"), env.DASHBOARD_SECRET);
+    if (!authorized) return jsonResponse({ error: "Unauthorized" }, 401);
     return handleHomeApi(request, env);
   }
 
   if (url.pathname !== "/" && url.pathname !== "/kindle") {
     return new Response("Not Found", { status: 404 });
+  }
+
+  const legacyAccess = env.DASHBOARD_DISABLE_LEGACY_QUERY !== "1" &&
+    matchesSecret(url.searchParams.get("key"), env.DASHBOARD_SECRET);
+  if (!legacyAccess && !(await hasDashboardSession(request, env.DASHBOARD_LOGIN_SECRET))) {
+    if (!env.DASHBOARD_LOGIN_SECRET) return new Response("Unauthorized", { status: 401 });
+    if (url.protocol !== "https:") return Response.redirect(`https://${url.host}/kindle`, 302);
+    return dashboardLoginPage();
   }
 
   const location = getLocation(request, env);
@@ -189,6 +191,7 @@ function htmlResponse(html, status = 200) {
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "no-store",
+      "referrer-policy": "no-referrer",
       "x-robots-tag": "noindex, nofollow",
     },
   });
