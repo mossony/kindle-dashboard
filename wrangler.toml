@@ -12,7 +12,7 @@ pattern = "kindle.mossony.online"
 custom_domain = true
 
 [triggers]
-crons = ["*/15 * * * *"]
+crons = []
 
 [observability]
 enabled = true

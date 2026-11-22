@@ -18,7 +18,7 @@ services:
     tmpfs: [/data]
     command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 32mb, --maxclients, "32"]
     networks: [telemetry]
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: [CMD, redis-cli, ping]
       interval: 5s
@@ -30,7 +30,7 @@ services:
     <<: *isolation
     mem_limit: 192m
     networks: [telemetry]
-    restart: unless-stopped
+    restart: always
     depends_on:
       redis:
         condition: service_healthy
@@ -44,7 +44,7 @@ services:
     user: "65532"
     mem_limit: 64m
     networks: [default, telemetry]
-    restart: unless-stopped
+    restart: always
     depends_on: [receiver]
     ports:
       - "${TESLA_LISTEN_ADDRESS:-127.0.0.1}:${TESLA_RECEIVER_PORT:-4443}:4443"
@@ -56,7 +56,7 @@ services:
     <<: *isolation
     mem_limit: 64m
     networks: [default, telemetry]
-    restart: unless-stopped
+    restart: always
     depends_on:
       redis:
         condition: service_healthy
