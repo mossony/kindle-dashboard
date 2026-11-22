@@ -1,5 +1,5 @@
 import { getTeslaBattery, receiveTeslaTelemetry, syncTeslaBattery, TESLA_PUBLIC_KEY } from "./tesla.js";
-import { dashboardLoginPage, hasDashboardSession, loginDashboard, matchesSecret } from "./dashboard-auth.js";
+import { dashboardLoginPage, hasDashboardSession, hasDeviceCredential, loginDashboard, matchesSecret } from "./dashboard-auth.js";
 
 const REFRESH_SECONDS = 60;
 
@@ -35,6 +35,12 @@ async function handleRequest(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/api/tesla/telemetry") return receiveTeslaTelemetry(request, env);
   if (url.pathname === "/login") return loginDashboard(request, env.DASHBOARD_LOGIN_SECRET);
+  if (url.pathname === "/device/dashboard") {
+    if (!(await hasDeviceCredential(request, env.DASHBOARD_DEVICE_SECRET))) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    return renderDashboardResponse(request, env);
+  }
   if (url.pathname === "/.well-known/appspecific/com.tesla.3p.public-key.pem") {
     const publicKey = env.TESLA_PUBLIC_KEY?.trim() || TESLA_PUBLIC_KEY;
     if (!publicKey || !/^-----BEGIN PUBLIC KEY-----\r?\n[A-Za-z0-9+/=\r\n]+\r?\n-----END PUBLIC KEY-----$/.test(publicKey)) {
@@ -61,7 +67,10 @@ async function handleRequest(request, env) {
     if (url.protocol !== "https:") return Response.redirect(`https://${url.host}/kindle`, 302);
     return dashboardLoginPage();
   }
+  return renderDashboardResponse(request, env);
+}
 
+async function renderDashboardResponse(request, env) {
   const location = getLocation(request, env);
   const today = formatDate(new Date(), location.timezone);
   const [nvdaResult, btcResult, weatherResult, rogersCentreResult, indoorResult, teslaResult] = await Promise.allSettled([
@@ -199,7 +208,7 @@ function htmlResponse(html, status = 200) {
 
 function handleUnexpectedError(request, env, error) {
   const url = new URL(request.url);
-  if (url.pathname === "/api/home") {
+  if (url.pathname === "/api/home" || url.pathname === "/device/dashboard") {
     return jsonResponse({ ok: false, error: "Temporary unavailable" }, 503);
   }
 

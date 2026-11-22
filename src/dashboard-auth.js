@@ -46,6 +46,13 @@ async function readPassword(request) {
   return new URLSearchParams(new TextDecoder().decode(buffer.subarray(0, length))).get("password");
 }
 
+export async function hasDeviceCredential(request, secret) {
+  if (!secret || request.method !== "POST" || new URL(request.url).protocol !== "https:" || request.headers.has("origin")) {
+    return false;
+  }
+  return matchesSecret(await readPassword(request), secret);
+}
+
 export async function loginDashboard(request, secret) {
   const url = new URL(request.url);
   const origin = request.headers.get("origin");
