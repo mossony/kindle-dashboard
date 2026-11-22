@@ -50,12 +50,15 @@ def extract_sample(payload, vin):
 
 def forward(opener, token, sample):
     request = Request(WORKER_URL, data=json.dumps(sample).encode(), headers={
-        "Authorization": f"Bearer {token}", "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "User-Agent": "KindleDashboard-Tesla-Telemetry/1.0",
     }, method="POST")
     for attempt in range(3):
         try:
             with opener.open(request, timeout=8) as response:
                 if response.status == 204:
+                    print("Cloudflare accepted Tesla telemetry")
                     return
                 print(f"Unexpected Worker response: HTTP {response.status}")
                 return
