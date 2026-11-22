@@ -702,18 +702,6 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       white-space: nowrap;
     }
 
-    .teslaCard {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 3px 8px;
-      border: 2px solid #000;
-      border-radius: 8px;
-      text-align: left;
-      white-space: nowrap;
-      font-size: 18px;
-      line-height: 1.15;
-    }
-
     .card {
       box-sizing: border-box;
       position: relative;
@@ -788,6 +776,20 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 
     .bottomRow .metric strong {
       font-size: 20px;
+    }
+
+    .teslaRing {
+      display: block;
+      width: 148px;
+      height: 148px;
+      margin: 0 auto;
+    }
+
+    .teslaDetails {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 19px;
+      line-height: 1.2;
     }
 
     .cardCompact {
@@ -1101,11 +1103,11 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       margin-top: 16px;
     }
 
-    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) {
+    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent):not(.cardTesla) {
       min-height: 214px;
     }
 
-    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent) .primary {
+    .hasEvent .card:not(.cardCompact):not(.cardWeather):not(.cardEvent):not(.cardTesla) .primary {
       font-size: 76px;
     }
 
@@ -1180,13 +1182,67 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       padding-top: 12px;
       font-size: 24px;
     }
+
+    .hasEvent .bottomStack .card {
+      min-height: 155px;
+      padding: 12px;
+    }
+
+    .hasEvent .bottomStack .cardTesla {
+      margin-bottom: 20px;
+    }
+
+    .bottomStack .teslaContent {
+      display: table;
+      width: 100%;
+    }
+
+    .bottomStack .teslaContent > div {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .bottomStack .teslaRing {
+      width: 108px;
+      height: 108px;
+      margin: 0;
+    }
+
+    .bottomStack .teslaDetails {
+      font-size: 16px;
+      padding-left: 8px;
+    }
+
+    .hasEvent .bottomStack .cardLabel {
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+
+    .hasEvent .bottomStack .eventTitle {
+      font-size: 21px;
+      line-height: 1.1;
+      max-height: 2.2em;
+      overflow: hidden;
+    }
+
+    .hasEvent .bottomStack .eventSubtitle {
+      display: none;
+    }
+
+    .hasEvent .bottomStack .eventTime,
+    .hasEvent .bottomStack .eventWarning {
+      margin-top: 6px;
+      padding-top: 0;
+      border: 0;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <main class="shell ${rogersCentre ? "hasEvent" : ""}">
     <section class="masthead">
       <div class="date">${escapeHtml(date)}</div>
-      <div class="refreshNote"><span class="refreshPill">1m &middot; ${escapeHtml(generatedAt)}</span>${renderTeslaCard(tesla, location.timezone)}</div>
+      <div class="refreshNote"><span class="refreshPill">1m &middot; ${escapeHtml(generatedAt)}</span></div>
     </section>
 
     <section class="board">
@@ -1195,7 +1251,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
         <div class="marketSlot marketSlotRight">${renderMarketCard("BTCUSDT", btc, "cardCompact")}</div>
       </section>
       ${renderIndoorCard(indoor)}
-      ${renderBottomCards(weather, rogersCentre)}
+      ${renderBottomCards(weather, rogersCentre, tesla, location.timezone)}
     </section>
 
   </main>
@@ -1204,16 +1260,28 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
 }
 
 function renderTeslaCard(tesla, timezone) {
-  if (!tesla) return "";
-
+  const level = Math.max(0, Math.min(100, Math.round(tesla.level)));
+  const circumference = 2 * Math.PI * 60;
+  const filled = (level / 100) * circumference;
   const observedAt = new Date(tesla.timestamp);
-  const label = tesla.chargingState === "Charging" ? " &middot; Charging" : "";
+  const charging = tesla.chargingState === "Charging" ? "<br>Charging" : "";
   const observedDate = formatDate(observedAt, timezone);
   const observedTime = formatTime(observedAt, timezone);
   const when = observedDate === formatDate(new Date(), timezone)
     ? observedTime
     : `${observedDate.slice(5)} ${observedTime}`;
-  return `<br><div class="teslaCard"><strong>Tesla ${Math.round(tesla.level)}%</strong>${label}<br>Reported ${escapeHtml(when)}</div>`;
+  const arc = level > 0 ? `<circle cx="72" cy="72" r="60" fill="none" stroke="#000" stroke-width="10" stroke-linecap="round" stroke-dasharray="${filled.toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 72 72)"/>` : "";
+  return `<section class="card cardTesla">
+      <div class="cardLabel">Tesla</div>
+      <div class="teslaContent">
+        <div><svg class="teslaRing" width="148" height="148" viewBox="0 0 144 144" role="img" aria-label="Tesla battery ${level}%">
+          <circle cx="72" cy="72" r="60" fill="none" stroke="#c8c8c8" stroke-width="10"/>
+          ${arc}
+          <text x="72" y="85" text-anchor="middle" fill="#000" font-size="37" font-weight="bold">${level}%</text>
+        </svg></div>
+        <div class="teslaDetails">Reported ${escapeHtml(when)}${charging}</div>
+      </div>
+    </section>`;
 }
 
 function renderRecoveryPage({ date, generatedAt }) {
@@ -1442,14 +1510,17 @@ function renderIndoorCard(indoor) {
     </section>`;
 }
 
-function renderBottomCards(weather, rogersCentre) {
-  if (!rogersCentre) {
+function renderBottomCards(weather, rogersCentre, tesla, timezone) {
+  if (!rogersCentre && !tesla) {
     return renderWeatherCard(weather);
   }
 
   return `<section class="bottomRow">
       <div class="bottomSlot bottomSlotLeft">${renderWeatherCard(weather, true)}</div>
-      <div class="bottomSlot bottomSlotRight">${renderRogersCentreCard(rogersCentre)}</div>
+      <div class="bottomSlot bottomSlotRight${tesla && rogersCentre ? " bottomStack" : ""}">
+        ${tesla ? renderTeslaCard(tesla, timezone) : ""}
+        ${rogersCentre ? renderRogersCentreCard(rogersCentre) : ""}
+      </div>
     </section>`;
 }
 
