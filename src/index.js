@@ -2,6 +2,7 @@ import { getTeslaBattery, receiveTeslaTelemetry, syncTeslaBattery, TESLA_PUBLIC_
 import { dashboardLoginPage, hasDashboardSession, hasDeviceCredential, loginDashboard, matchesSecret } from "./dashboard-auth.js";
 
 const REFRESH_SECONDS = 60;
+const TESLA_STALE_MS = 2 * 60 * 60 * 1000;
 
 const DEFAULT_LOCATION = {
   city: "Toronto",
@@ -771,6 +772,22 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       margin-bottom: 0;
     }
 
+    .bottomPair {
+      height: 258px;
+    }
+
+    .bottomPair .bottomPairCard,
+    .hasEvent .bottomPair .bottomPairCard {
+      display: table-cell;
+      min-height: 0;
+      vertical-align: top;
+    }
+
+    .bottomPairGap {
+      display: table-cell;
+      width: 20px;
+    }
+
     .bottomRow .cardLabel {
       font-size: 20px;
       margin-bottom: 18px;
@@ -802,6 +819,13 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       text-align: center;
       font-size: 17px;
       line-height: 1.2;
+    }
+
+    .teslaStaleIcon {
+      width: 16px;
+      height: 16px;
+      margin-left: 3px;
+      vertical-align: -2px;
     }
 
     .bottomRow .cardTesla {
@@ -1211,62 +1235,40 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       font-size: 24px;
     }
 
-    .hasEvent .bottomStack .card {
-      min-height: 155px;
-      padding: 12px;
-    }
-
-    .hasEvent .bottomStack .cardTesla {
-      margin-bottom: 20px;
-    }
-
-    .bottomStack .teslaContent {
+    .hasEvent .card.eventStrip {
       display: table;
       width: 100%;
+      table-layout: fixed;
+      min-height: 0;
+      margin-top: 20px;
+      margin-bottom: 0;
+      padding: 8px 12px;
     }
 
-    .bottomStack .teslaContent > div {
+    .eventStrip > div {
       display: table-cell;
       vertical-align: middle;
     }
 
-    .bottomStack .teslaRing {
-      width: 108px;
-      height: 108px;
-      margin: 0;
+    .eventStrip .eventStripLabel {
+      width: 24%;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    .bottomStack .teslaDetails {
-      font-size: 16px;
-      padding-left: 8px;
-    }
-
-    .bottomStack .teslaRange {
-      font-size: 22px;
-    }
-
-    .hasEvent .bottomStack .cardLabel {
-      font-size: 15px;
-      margin-bottom: 6px;
-    }
-
-    .hasEvent .bottomStack .eventTitle {
-      font-size: 21px;
-      line-height: 1.1;
-      max-height: 2.2em;
+    .eventStrip .eventStripTitle {
+      font-size: 18px;
+      font-weight: 700;
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .hasEvent .bottomStack .eventSubtitle {
-      display: none;
-    }
-
-    .hasEvent .bottomStack .eventTime,
-    .hasEvent .bottomStack .eventWarning {
-      margin-top: 6px;
-      padding-top: 0;
-      border: 0;
-      font-size: 16px;
+    .eventStrip .eventStripDetails {
+      width: 26%;
+      text-align: right;
+      font-size: 14px;
+      line-height: 1.25;
     }
   </style>
 </head>
@@ -1296,6 +1298,10 @@ function renderTeslaCard(tesla, timezone) {
   const circumference = 2 * Math.PI * 60;
   const filled = (level / 100) * circumference;
   const observedAt = new Date(tesla.timestamp);
+  const stale = Date.now() - observedAt.getTime() > TESLA_STALE_MS;
+  const warning = stale ? ` <svg class="teslaStaleIcon" width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Tesla data over two hours old">
+    <title>Tesla data over two hours old</title><path d="M8 1 16 15H0Z" fill="#000"/><path d="M8 5v5" stroke="#fff" stroke-width="1.7"/><circle cx="8" cy="12.4" r=".9" fill="#fff"/>
+  </svg>` : "";
   const charging = tesla.chargingState === "Charging" ? "<br>Charging" : "";
   const range = Number.isFinite(tesla.rangeKm)
     ? `<div class="teslaRange">${Math.round(tesla.rangeKm)} km</div>`
@@ -1306,7 +1312,7 @@ function renderTeslaCard(tesla, timezone) {
     ? observedTime
     : `${observedDate.slice(5)} ${observedTime}`;
   const arc = level > 0 ? `<circle cx="72" cy="72" r="60" fill="none" stroke="#000" stroke-width="10" stroke-linecap="round" stroke-dasharray="${filled.toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 72 72)"/>` : "";
-  return `<section class="card cardTesla">
+  return `<section class="card cardTesla bottomPairCard">
       <div class="cardLabel">Tesla</div>
       <div class="teslaContent">
         <div><svg class="teslaRing" width="148" height="148" viewBox="0 0 144 144" role="img" aria-label="Tesla battery ${level}%">
@@ -1314,7 +1320,7 @@ function renderTeslaCard(tesla, timezone) {
           ${arc}
           <text x="72" y="85" text-anchor="middle" fill="#000" font-size="37" font-weight="bold">${level}%</text>
         </svg></div>
-        <div class="teslaDetails">${range}Reported ${escapeHtml(when)}${charging}</div>
+        <div class="teslaDetails">${range}Reported ${escapeHtml(when)}${warning}${charging}</div>
       </div>
     </section>`;
 }
@@ -1546,22 +1552,27 @@ function renderIndoorCard(indoor) {
 }
 
 function renderBottomCards(weather, rogersCentre, tesla, timezone) {
-  if (!rogersCentre && !tesla) {
+  if (tesla) {
+    return `<section class="bottomRow bottomPair">
+      ${renderWeatherCard(weather, true, "bottomPairCard")}
+      <div class="bottomPairGap" aria-hidden="true"></div>
+      ${renderTeslaCard(tesla, timezone)}
+    </section>${rogersCentre ? renderRogersCentreStrip(rogersCentre) : ""}`;
+  }
+  if (!rogersCentre) {
     return renderWeatherCard(weather);
   }
 
   return `<section class="bottomRow">
       <div class="bottomSlot bottomSlotLeft">${renderWeatherCard(weather, true)}</div>
-      <div class="bottomSlot bottomSlotRight${tesla && rogersCentre ? " bottomStack" : ""}">
-        ${tesla ? renderTeslaCard(tesla, timezone) : ""}
-        ${rogersCentre ? renderRogersCentreCard(rogersCentre) : ""}
-      </div>
+      <div class="bottomSlot bottomSlotRight">${renderRogersCentreCard(rogersCentre)}</div>
     </section>`;
 }
 
-function renderWeatherCard(weather, compact = false) {
+function renderWeatherCard(weather, compact = false, extraClass = "") {
+  const classes = `cardWeather${extraClass ? ` ${extraClass}` : ""}`;
   if (!weather) {
-    return renderUnavailableCard("Weather");
+    return renderUnavailableCard("Weather", classes);
   }
 
   const extraMetrics = compact
@@ -1569,7 +1580,7 @@ function renderWeatherCard(weather, compact = false) {
     : `<div class="metric"><strong>Humidity</strong>${Number.isFinite(weather.humidity) ? `${weather.humidity}%` : "--"}</div>
         <div class="metric"><strong>Wind</strong>${Number.isFinite(weather.wind) ? `${Math.round(weather.wind)} km/h` : "--"}</div>`;
 
-  return `<section class="card cardWeather">
+  return `<section class="card ${classes}">
       <div class="cardLabel">Weather</div>
       <div class="primary">${formatTemp(weather.temperature)}</div>
       <div class="metrics">
@@ -1578,6 +1589,15 @@ function renderWeatherCard(weather, compact = false) {
         ${extraMetrics}
       </div>
     </section>`;
+}
+
+function renderRogersCentreStrip(event) {
+  const time = event.time ? `${escapeHtml(event.time)} ` : "";
+  return `<section class="card cardEvent eventStrip">
+    <div class="eventStripLabel">Rogers Centre</div>
+    <div class="eventStripTitle">${escapeHtml(event.title)}</div>
+    <div class="eventStripDetails">${time}Today<br>Traffic likely</div>
+  </section>`;
 }
 
 function renderRogersCentreCard(event) {
