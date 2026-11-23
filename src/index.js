@@ -1234,40 +1234,64 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       font-size: 24px;
     }
 
-    .hasEvent .card.eventStrip {
-      display: table;
-      width: 100%;
-      table-layout: fixed;
+    .bottomTriple {
+      height: 330px;
+    }
+
+    .hasEvent .bottomTriple .bottomPairCard {
       min-height: 0;
-      margin-top: 20px;
-      margin-bottom: 0;
-      padding: 8px 12px;
+      padding: 14px 10px;
     }
 
-    .eventStrip > div {
-      display: table-cell;
-      vertical-align: middle;
-    }
-
-    .eventStrip .eventStripLabel {
-      width: 24%;
+    .hasEvent .bottomTriple .cardLabel {
       font-size: 14px;
-      font-weight: 700;
+      margin-bottom: 12px;
     }
 
-    .eventStrip .eventStripTitle {
-      font-size: 18px;
-      font-weight: 700;
-      white-space: nowrap;
+    .hasEvent .bottomTriple .primary {
+      font-size: 36px;
+    }
+
+    .hasEvent .bottomTriple .metric {
+      font-size: 19px;
+    }
+
+    .hasEvent .bottomTriple .metric strong {
+      font-size: 15px;
+    }
+
+    .bottomTriple .teslaRing {
+      width: 108px;
+      height: 108px;
+    }
+
+    .bottomTriple .teslaRange {
+      font-size: 22px;
+    }
+
+    .bottomTriple .teslaDetails {
+      font-size: 14px;
+    }
+
+    .hasEvent .bottomTriple .eventTitle {
+      font-size: 22px;
+      line-height: 1.15;
+      max-height: 3.45em;
       overflow: hidden;
-      text-overflow: ellipsis;
+      word-wrap: break-word;
     }
 
-    .eventStrip .eventStripDetails {
-      width: 26%;
-      text-align: right;
-      font-size: 14px;
-      line-height: 1.25;
+    .hasEvent .bottomTriple .eventSubtitle {
+      font-size: 16px;
+      max-height: 2.5em;
+      overflow: hidden;
+      word-wrap: break-word;
+    }
+
+    .hasEvent .bottomTriple .eventTime,
+    .hasEvent .bottomTriple .eventWarning {
+      margin-top: 14px;
+      font-size: 17px;
     }
   </style>
 </head>
@@ -1552,11 +1576,12 @@ function renderIndoorCard(indoor) {
 
 function renderBottomCards(weather, rogersCentre, tesla, timezone) {
   if (tesla) {
-    return `<section class="bottomRow bottomPair">
+    return `<section class="bottomRow bottomPair${rogersCentre ? " bottomTriple" : ""}">
       ${renderWeatherCard(weather, true, "bottomPairCard")}
       <div class="bottomPairGap" aria-hidden="true"></div>
       ${renderTeslaCard(tesla, timezone)}
-    </section>${rogersCentre ? renderRogersCentreStrip(rogersCentre) : ""}`;
+      ${rogersCentre ? `<div class="bottomPairGap" aria-hidden="true"></div>${renderRogersCentreCard(rogersCentre, "bottomPairCard")}` : ""}
+    </section>`;
   }
   if (!rogersCentre) {
     return renderWeatherCard(weather);
@@ -1590,20 +1615,11 @@ function renderWeatherCard(weather, compact = false, extraClass = "") {
     </section>`;
 }
 
-function renderRogersCentreStrip(event) {
-  const time = event.time ? `${escapeHtml(event.time)} ` : "";
-  return `<section class="card cardEvent eventStrip">
-    <div class="eventStripLabel">Rogers Centre</div>
-    <div class="eventStripTitle">${escapeHtml(event.title)}</div>
-    <div class="eventStripDetails">${time}Today<br>Traffic likely</div>
-  </section>`;
-}
-
-function renderRogersCentreCard(event) {
+function renderRogersCentreCard(event, extraClass = "") {
   const time = event.time ? `${escapeHtml(event.time)} ` : "";
   const subtitle = event.subtitle ? `<div class="eventSubtitle">${escapeHtml(event.subtitle)}</div>` : "";
 
-  return `<section class="card cardEvent">
+  return `<section class="card cardEvent${extraClass ? ` ${extraClass}` : ""}">
       <div class="cardLabel">Rogers Centre</div>
       <div class="eventTitle">${escapeHtml(event.title)}</div>
       ${subtitle}
