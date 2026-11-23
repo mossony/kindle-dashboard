@@ -776,8 +776,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       height: 258px;
     }
 
-    .bottomPair .bottomPairCard,
-    .hasEvent .bottomPair .bottomPairCard {
+    .bottomPair .bottomPairCard {
       display: table-cell;
       min-height: 0;
       vertical-align: top;
@@ -1188,7 +1187,7 @@ function renderDashboard({ date, generatedAt, location, nvda, btc, indoor, weath
       font-size: 22px;
     }
 
-    .hasEvent .bottomRow .card {
+    .hasEvent .bottomRow:not(.bottomPair) .card {
       min-height: 330px;
       margin-bottom: 0;
     }
