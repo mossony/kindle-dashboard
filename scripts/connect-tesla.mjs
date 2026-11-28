@@ -19,8 +19,9 @@ async function teslaRequest(url, options, label) {
 }
 
 async function main() {
-  if (!clientId || !clientSecret || !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin || "")) {
-    throw new Error("Set TESLA_CLIENT_ID, TESLA_CLIENT_SECRET, and the 17-character TESLA_VIN in the local terminal.");
+  const validVin = /^[A-HJ-NPR-Z0-9]{17}$/;
+  if (!clientId || !clientSecret || (vin && !validVin.test(vin))) {
+    throw new Error("Set TESLA_CLIENT_ID and TESLA_CLIENT_SECRET. If provided, TESLA_VIN must be a 17-character VIN.");
   }
   const runWrangler = (args, input) => spawnSync(process.execPath, [wrangler, ...args], {
     env: childEnv,
@@ -33,12 +34,14 @@ async function main() {
     method: "POST",
     body: new URLSearchParams({ grant_type: grant, client_id: clientId, client_secret: clientSecret, audience, ...fields }),
   }, "Tesla token exchange")).json();
-  const partner = await token("client_credentials", { scope: "vehicle_device_data" });
-  await teslaRequest(`${audience}/api/1/partner_accounts`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${partner.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ domain: host }),
-  }, "Tesla partner registration");
+  if (!process.argv.includes("--already-registered")) {
+    const partner = await token("client_credentials", { scope: "vehicle_device_data" });
+    await teslaRequest(`${audience}/api/1/partner_accounts`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${partner.access_token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ domain: host }),
+    }, "Tesla partner registration");
+  }
 
   const state = randomUUID();
   const authorize = new URL("https://auth.tesla.com/oauth2/v3/authorize");
@@ -58,8 +61,18 @@ async function main() {
         const code = callback.searchParams.get("code");
         if (!code) throw new Error("Tesla authorization did not return a code.");
         const user = await token("authorization_code", { code, redirect_uri: redirectUri });
-        if (!user.refresh_token) throw new Error("Tesla did not return a refresh token.");
-        const secrets = JSON.stringify({ TESLA_CLIENT_ID: clientId, TESLA_VIN: vin, TESLA_REFRESH_TOKEN: user.refresh_token });
+        if (!user.access_token || !user.refresh_token) throw new Error("Tesla did not return the required tokens.");
+        let selectedVin = vin;
+        if (!selectedVin) {
+          const vehicles = await (await teslaRequest(`${audience}/api/1/vehicles`, {
+            headers: { Authorization: `Bearer ${user.access_token}` },
+          }, "Tesla vehicle list")).json();
+          if (vehicles.response?.length !== 1 || !validVin.test(vehicles.response[0].vin)) {
+            throw new Error("Tesla did not return exactly one vehicle. Specify the VIN to connect.");
+          }
+          selectedVin = vehicles.response[0].vin;
+        }
+        const secrets = JSON.stringify({ TESLA_CLIENT_ID: clientId, TESLA_VIN: selectedVin, TESLA_REFRESH_TOKEN: user.refresh_token });
         if (runWrangler(["secret", "bulk"], secrets).status !== 0) throw new Error("Cloudflare could not save the Tesla secrets.");
         response.end("Tesla is connected. You can close this tab.");
         resolve();

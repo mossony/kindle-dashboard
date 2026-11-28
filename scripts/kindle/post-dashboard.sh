@@ -8,11 +8,10 @@ SECRET_DIR=/var/local/kindle-dashboard
 SECRET_FILE="$SECRET_DIR/device-secret"
 SEED="$BASE/.kindle-device-seed"
 RUNTIME=/tmp/kindle-dashboard-post
-WEB="$RUNTIME/www"
 PID_FILE="$RUNTIME/pid"
-PORT=8765
+PAGE=/mnt/us/kindle-dashboard.html
+NEXT_PAGE="$BASE/.kindle-dashboard-next.html"
 ENDPOINT=https://kindle.mossony.online/device/dashboard
-HTTP_PID=""
 
 log_msg() {
 	printf '%s POST dashboard %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG"
@@ -49,37 +48,27 @@ running() {
 }
 
 cleanup() {
-	if [ -n "$HTTP_PID" ]; then
-		kill "$HTTP_PID" 2>/dev/null
-		wait "$HTTP_PID" 2>/dev/null
-	fi
-	rm -f "$PID_FILE" "$RUNTIME/next.html"
+	rm -f "$PID_FILE" "$NEXT_PAGE"
 }
 
 run() {
 	unset LD_LIBRARY_PATH
 	command -v curl >/dev/null 2>&1 || { log_msg 'curl is not available'; return 1; }
-	command -v busybox >/dev/null 2>&1 || { log_msg 'BusyBox is not available'; return 1; }
 	provision || { log_msg 'cannot provision device credential'; return 1; }
-	private_dir "$WEB" || return 1
-	if [ ! -s "$WEB/index.html" ]; then
-		printf '%s\n' '<!doctype html><meta http-equiv="refresh" content="8"><title>Kindle Dashboard</title><h1>Waiting for dashboard</h1><p>Check Wi-Fi if this persists.</p>' > "$WEB/index.html" || return 1
+	if [ ! -s "$PAGE" ]; then
+		printf '%s\n' '<!doctype html><meta http-equiv="refresh" content="8"><title>Kindle Dashboard</title><h1>Waiting for dashboard</h1><p>Check Wi-Fi if this persists.</p>' > "$PAGE" || return 1
 	fi
 	trap cleanup EXIT
 	trap 'exit 0' HUP INT TERM
-	busybox httpd -f -p "127.0.0.1:$PORT" -h "$WEB" >> "$LOG" 2>&1 &
-	HTTP_PID=$!
-	sleep 1
-	kill -0 "$HTTP_PID" 2>/dev/null || { log_msg 'loopback HTTP server failed'; return 1; }
 	printf '%s\n' "$$" > "$PID_FILE" || return 1
-	log_msg "loopback server ready on 127.0.0.1:$PORT"
-	while kill -0 "$HTTP_PID" 2>/dev/null; do
+	log_msg 'local HTML updater started'
+	while :; do
 		status=$(curl -q -s --noproxy '*' --connect-timeout 6 --max-time 15 \
 			-A 'KindleDashboard-Device/1.0' --data-urlencode "password@$SECRET_FILE" \
-			-o "$RUNTIME/next.html" -w '%{http_code}' "$ENDPOINT")
+			-o "$NEXT_PAGE" -w '%{http_code}' "$ENDPOINT")
 		rc=$?
-		if [ "$rc" -eq 0 ] && [ "$status" = 200 ] && grep -q '<title>Kindle Dashboard</title>' "$RUNTIME/next.html"; then
-			if mv "$RUNTIME/next.html" "$WEB/index.html" && [ -f "$SEED" ]; then
+		if [ "$rc" -eq 0 ] && [ "$status" = 200 ] && grep -q '<title>Kindle Dashboard</title>' "$NEXT_PAGE"; then
+			if mv "$NEXT_PAGE" "$PAGE" && [ -f "$SEED" ]; then
 				rm -f "$SEED" && log_msg 'credential import verified and USB seed removed'
 			fi
 		else
